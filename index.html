@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#08060f" />
+    <meta name="description" content="AI KISA Model School Teacher Management System, designed and developed by Abeha Inam." />
+    <meta name="author" content="Abeha Inam" />
+    <meta name="creator" content="Abeha Inam, Primary Developer and System Architect" />
+    <title>AI KISA Model School — Teacher Management System | Abeha Inam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Fallback favicon placeholder — replaced at runtime with project logo -->
+    <link rel="icon" id="app-favicon" href="/favicon.png">
+    <script type="module">
+      // Use the project's logo data URL as the favicon so the provided logo becomes the site favicon.
+      import { LOGO_SRC } from '/src/constants/logo.js';
+      const link = document.getElementById('app-favicon') || document.createElement('link');
+      link.rel = 'icon';
+      link.type = 'image/webp';
+      link.href = LOGO_SRC;
+      document.head.appendChild(link);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

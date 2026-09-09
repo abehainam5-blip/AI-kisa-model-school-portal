@@ -1,0 +1,15 @@
+# Node Modules & Dependencies
+node_modules/
+dist/
+build/
+
+# Environment Files & Passwords
+.env
+.env.local
+
+# Database or sensitive config files
+config.php
+
+# IDE & OS files
+.vscode/
+.DS_Store
