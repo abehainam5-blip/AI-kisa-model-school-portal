@@ -4,16 +4,24 @@ import { useData } from "../../context/DataContext";
 import { TASK_TYPES } from "../../constants/taskTypes";
 
 export function QuickTaskModal({ isOpen, onClose }) {
-  const { roleStudents, assignTask } = useData();
+  const { roleStudents, assignTask, saving } = useData();
   const [selectedStudent, setSelectedStudent] = useState(roleStudents[0]?.id || "");
   const [selectedTask, setSelectedTask] = useState("canva");
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+  const isSubmitting = saving.tasks;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStudent || !selectedTask) return;
-    assignTask(Number(selectedStudent), selectedTask, note.trim());
+    try {
+      await assignTask(Number(selectedStudent), selectedTask, note.trim());
+    } catch (submitError) {
+      setError(submitError.message || "Unable to save this activity.");
+      return;
+    }
     setNote("");
+    setError("");
     onClose();
   };
 
@@ -28,13 +36,14 @@ export function QuickTaskModal({ isOpen, onClose }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            Assign Activity
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Assign Activity"}
           </button>
         </>
       }
     >
       <form onSubmit={handleSubmit}>
+        {error && <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,113,133,0.15)", color: "var(--danger)", fontSize: 12, marginBottom: 14 }}>{error}</div>}
         <div className="field-group">
           <label className="field-label">Student</label>
           <select

@@ -4,36 +4,45 @@ import { useData } from "../../context/DataContext";
 import { CLASS_NUMS } from "../../constants/navigation";
 
 export function AddStudentModal({ isOpen, onClose }) {
-  const { addStudent } = useData();
+  const { addStudent, saving } = useData();
   const [name, setName] = useState("");
   const [cls, setCls] = useState("8");
   const [gender, setGender] = useState("Male");
   const [attendance, setAttendance] = useState("85");
   const [performance, setPerformance] = useState("75");
-  const [guardianContact, setGuardianContact] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const isSubmitting = saving.students;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setError("Please enter the student's full name.");
       return;
     }
-    addStudent({
-      name: name.trim(),
-      class: cls,
-      gender,
-      attendance,
-      performance,
-      guardianContact: guardianContact.trim() || "+92 300 1234567"
-    });
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("Please enter a valid unique email address.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    try {
+      await addStudent({ name: name.trim(), class: cls, gender, attendance, performance, email: email.trim(), password });
+    } catch (submitError) {
+      setError(submitError.message || "Unable to save this student.");
+      return;
+    }
     // Reset form
     setName("");
     setCls("8");
     setGender("Male");
     setAttendance("85");
     setPerformance("75");
-    setGuardianContact("");
+    setEmail("");
+    setPassword("");
     setError("");
     onClose();
   };
@@ -48,8 +57,8 @@ export function AddStudentModal({ isOpen, onClose }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            Save Student
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Student"}
           </button>
         </>
       }
@@ -68,7 +77,19 @@ export function AddStudentModal({ isOpen, onClose }) {
             value={name}
             onChange={(e) => { setName(e.target.value); setError(""); }}
             autoFocus
+            aria-label="Student Full Name *"
           />
+        </div>
+
+        <div className="grid grid-2" style={{ marginBottom: 15 }}>
+          <div>
+            <label className="field-label">Student Email *</label>
+            <input type="email" className="field-input" placeholder="student@aikisa.edu.pk" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
+          </div>
+          <div>
+            <label className="field-label">Initial Password *</label>
+            <input type="password" className="field-input" placeholder="At least 8 characters" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} autoComplete="new-password" />
+          </div>
         </div>
 
         <div className="grid grid-2" style={{ marginBottom: 15 }}>
@@ -115,15 +136,6 @@ export function AddStudentModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        <div className="field-group">
-          <label className="field-label">Guardian Contact Number</label>
-          <input
-            className="field-input"
-            placeholder="+92 300 1234567"
-            value={guardianContact}
-            onChange={(e) => setGuardianContact(e.target.value)}
-          />
-        </div>
       </form>
     </Modal>
   );

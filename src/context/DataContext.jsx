@@ -16,7 +16,7 @@ import { useToast } from "./ToastContext";
 const DataContext = createContext();
 
 export function DataProvider({ children }) {
-  const { currentUser, role } = useAuth();
+  const { currentUser, role, token } = useAuth();
   const { showToast } = useToast();
 
   const [students, setStudents] = useState(INITIAL_STUDENTS);
@@ -26,6 +26,7 @@ export function DataProvider({ children }) {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [calendarEvents, setCalendarEvents] = useState(INITIAL_CALENDAR_EVENTS);
   const [globalSearch, setGlobalSearch] = useState("");
+  const [saving, setSaving] = useState({});
 
   // Attendance state: map of { [studentId]: boolean }
   const [attendance, setAttendance] = useState(() => {
@@ -45,7 +46,8 @@ export function DataProvider({ children }) {
   // Filter students based on active role
   const roleStudents = useMemo(() => {
     if (role === "teacher") {
-      return students.filter((s) => currentUser?.classes?.includes(s.class));
+      const assignedClasses = currentUser?.classes?.length ? currentUser.classes : [8, 9];
+      return students.filter((s) => assignedClasses.includes(s.class));
     }
     return students;
   }, [students, role, currentUser]);
@@ -62,31 +64,69 @@ export function DataProvider({ children }) {
     setAuditLogs((prev) => [newLog, ...prev]);
   };
 
+  // Mutations update local state immediately. The async boundary lets forms
+  // show a reliable loading state and leaves room for API persistence later.
+  const runMutation = async (key, mutation) => {
+    setSaving((prev) => ({ ...prev, [key]: true }));
+    try {
+      return await mutation();
+    } catch (error) {
+      showToast(error.message || "The change could not be saved.", "error");
+      throw error;
+    } finally {
+      setSaving((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
   // Student Actions
-  const addStudent = (studentData) => {
+  const addStudent = (studentData) => runMutation("students", async () => {
+    if (students.some((student) => student.email?.toLowerCase() === studentData.email?.toLowerCase())) {
+      throw new Error("A student with this email already exists.");
+    }
     const id = Date.now();
-    const newStudent = {
-      id,
-      name: studentData.name,
-      class: Number(studentData.class),
+    const localStudent = {
+      id, name: studentData.name, class: Number(studentData.class),
       attendance: Number(studentData.attendance) || 85,
-      performance: Number(studentData.performance) || 75,
-      tasksCompleted: 0,
+      performance: Number(studentData.performance) || 75, tasksCompleted: 0,
       strengths: studentData.strengths && studentData.strengths.length ? studentData.strengths : STRENGTH_POOL[0],
       weakPoints: studentData.weakPoints && studentData.weakPoints.length ? studentData.weakPoints : WEAK_POOL[0],
-      avatarHue: (id * 47) % 360,
-      present: true,
+      avatarHue: (id * 47) % 360, present: true,
       gender: studentData.gender || "Not Specified",
       email: studentData.email || `${studentData.name.toLowerCase().replace(/\s+/g, ".")}@aikisa.edu.pk`,
-      guardianContact: studentData.guardianContact || "+92 300 0000000"
     };
-
+    if (!token) throw new Error("You must be signed in to create student records.");
+    const response = await fetch("/backend/api/add_student.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      credentials: "include",
+      body: JSON.stringify({
+        name: studentData.name,
+        email: studentData.email,
+        password: studentData.password,
+        class: studentData.class,
+        gender: studentData.gender,
+        attendance: studentData.attendance,
+        performance: studentData.performance
+      })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || "Unable to create the student record.");
+    }
+    const persisted = payload.data?.student || {};
+    const newStudent = {
+      ...localStudent,
+      ...persisted,
+      class: Number(persisted.class_number || localStudent.class),
+      attendance: Number(persisted.attendance ?? localStudent.attendance),
+      performance: Number(persisted.performance ?? localStudent.performance)
+    };
     setStudents((prev) => [newStudent, ...prev]);
-    setAttendance((prev) => ({ ...prev, [id]: true }));
+    setAttendance((prev) => ({ ...prev, [newStudent.id || id]: true }));
     logAudit("Added student", `${newStudent.name} · Class ${newStudent.class}`);
     showToast(`Student ${newStudent.name} added successfully!`, "success");
     return newStudent;
-  };
+  });
 
   const updateStudent = (id, updatedFields) => {
     setStudents((prev) =>
@@ -133,10 +173,10 @@ export function DataProvider({ children }) {
   };
 
   // Task Actions
-  const assignTask = (studentId, taskKey, customNote = "") => {
+  const assignTask = (studentId, taskKey, customNote = "") => runMutation("tasks", async () => {
     const student = students.find((s) => s.id === studentId);
     const taskDef = TASK_TYPES.find((t) => t.key === taskKey);
-    if (!student || !taskDef) return;
+    if (!student || !taskDef) throw new Error("Please select a valid student and task.");
 
     const newLogItem = {
       id: Date.now(),
@@ -157,12 +197,16 @@ export function DataProvider({ children }) {
 
     logAudit("Assigned daily task", `${taskDef.label} → ${student.name}`);
     showToast(`Assigned ${taskDef.label} to ${student.name}`, "success");
-  };
+    return newLogItem;
+  });
 
   // Teacher Actions
-  const addTeacher = (teacherData) => {
+  const addTeacher = (teacherData) => runMutation("teachers", async () => {
+    if (teachers.some((teacher) => teacher.email?.toLowerCase() === teacherData.email?.toLowerCase())) {
+      throw new Error("A teacher with this email already exists.");
+    }
     const newId = Date.now();
-    const newTeacher = {
+    const localTeacher = {
       id: newId,
       name: teacherData.name,
       subject: teacherData.subject,
@@ -170,16 +214,44 @@ export function DataProvider({ children }) {
       rating: 5.0,
       status: "Active",
       email: teacherData.email || `${teacherData.name.toLowerCase().replace(/\s+/g, ".")}@aikisa.edu.pk`,
-      phone: teacherData.phone || "+92 300 1234567"
     };
+    let newTeacher = localTeacher;
+
+    if (!token) {
+      throw new Error("You must be signed in as a Super Admin to create teacher accounts.");
+    }
+    if (token) {
+      const response = await fetch("/backend/api/add_teacher.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        body: JSON.stringify({
+          name: teacherData.name,
+          email: teacherData.email,
+          password: teacherData.password
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Unable to create the teacher account.");
+      }
+      const user = payload.data?.user || {};
+      newTeacher = {
+        ...localTeacher,
+        ...user,
+        id: user.id || newId,
+        status: user.status === "active" ? "Active" : localTeacher.status
+      };
+    }
+
     setTeachers((prev) => [...prev, newTeacher]);
     logAudit("Added teacher", `${newTeacher.name} · ${newTeacher.subject}`);
     showToast(`Teacher ${newTeacher.name} registered.`, "success");
     return newTeacher;
-  };
+  });
 
   // Reports Actions
-  const submitReport = (reportData) => {
+  const submitReport = (reportData) => runMutation("reports", async () => {
     const newReport = {
       id: Date.now(),
       teacher: currentUser?.name || "Teacher",
@@ -206,7 +278,8 @@ export function DataProvider({ children }) {
       },
       ...prev
     ]);
-  };
+    return newReport;
+  });
 
   const updateReportStatus = (reportId, newStatus) => {
     setReports((prev) =>
@@ -224,14 +297,15 @@ export function DataProvider({ children }) {
   };
 
   // Calendar Actions
-  const addCalendarEvent = (day, title) => {
+  const addCalendarEvent = (day, title) => runMutation("calendar", async () => {
     setCalendarEvents((prev) => ({
       ...prev,
       [day]: title
     }));
     logAudit("Created calendar event", `${title} on Day ${day}`);
     showToast(`Event "${title}" added to Calendar on Day ${day}.`, "success");
-  };
+    return { day, title };
+  });
 
   // Notification Actions
   const markNotificationRead = (id) => {
@@ -275,7 +349,8 @@ export function DataProvider({ children }) {
         addCalendarEvent,
         markNotificationRead,
         markAllNotificationsRead,
-        clearNotification
+        clearNotification,
+        saving
       }}
     >
       {children}

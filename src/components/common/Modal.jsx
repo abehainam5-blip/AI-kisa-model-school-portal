@@ -1,7 +1,10 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useMotionConfig } from "./Motion";
 
 export function Modal({ isOpen, onClose, title, children, footer, size = "md" }) {
+  const { shouldReduceMotion } = useMotionConfig();
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
@@ -16,13 +19,24 @@ export function Modal({ isOpen, onClose, title, children, footer, size = "md" })
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div
+    <AnimatePresence>
+      {isOpen && <motion.div
+        className="modal-backdrop"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+      >
+      <motion.div
         className={`modal-box ${size === "lg" ? "modal-lg" : ""}`}
         onClick={(e) => e.stopPropagation()}
+        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.97, y: 8 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: "easeOut" }}
       >
         <div className="modal-head">
           <div style={{ fontWeight: 800, fontSize: 16 }}>{title}</div>
@@ -37,8 +51,9 @@ export function Modal({ isOpen, onClose, title, children, footer, size = "md" })
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
-      </div>
-    </div>
+      </motion.div>
+      </motion.div>}
+    </AnimatePresence>
   );
 }
 

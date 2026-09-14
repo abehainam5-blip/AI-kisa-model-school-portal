@@ -3,12 +3,13 @@ import { Modal } from "../common/Modal";
 import { useData } from "../../context/DataContext";
 
 export function AddEventModal({ isOpen, onClose, defaultDay = 15 }) {
-  const { addCalendarEvent } = useData();
+  const { addCalendarEvent, saving } = useData();
   const [day, setDay] = useState(defaultDay);
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
+  const isSubmitting = saving.calendar;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
       setError("Please enter the event or deadline name.");
@@ -19,7 +20,12 @@ export function AddEventModal({ isOpen, onClose, defaultDay = 15 }) {
       setError("Please pick a valid day (1-30).");
       return;
     }
-    addCalendarEvent(d, title.trim());
+    try {
+      await addCalendarEvent(d, title.trim());
+    } catch (submitError) {
+      setError(submitError.message || "Unable to save this event.");
+      return;
+    }
     setTitle("");
     setError("");
     onClose();
@@ -35,8 +41,8 @@ export function AddEventModal({ isOpen, onClose, defaultDay = 15 }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            Save Event
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Event"}
           </button>
         </>
       }

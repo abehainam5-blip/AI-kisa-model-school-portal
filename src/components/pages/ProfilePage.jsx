@@ -1,112 +1,83 @@
 import React, { useState } from "react";
-import { Lock, ShieldCheck, Edit2, Code2, Sparkles } from "lucide-react";
+import { AtSign, Edit2, Lock, Sparkles, UserRound } from "lucide-react";
+import { motion } from "framer-motion";
 import { PageHead } from "../common/PageHead";
 import { Modal } from "../common/Modal";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { cardReveal, useMotionConfig } from "../common/Motion";
+
+const CREATOR_BIO =
+  "I designed and developed this Teacher Management System to create a modern, organized, and easy-to-use digital experience for teachers and school administration at AI KISA Model School.";
 
 export function ProfilePage() {
   const { role, currentUser } = useAuth();
   const { showToast } = useToast();
+  const { shouldReduceMotion } = useMotionConfig();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [phone, setPhone] = useState("+92 321 9876543");
-  const [bio, setBio] = useState(
-    "AI KISA Model School's management system was designed and built by Abeha Inam to give teachers and administrators one clear, connected place to track student growth — from daily tasks to monthly report cards."
-  );
+  const [bio, setBio] = useState(CREATOR_BIO);
 
   const handleSaveContact = (e) => {
     e.preventDefault();
     setIsEditModalOpen(false);
-    showToast("Contact details updated successfully.", "success");
+    showToast("Profile details updated successfully.", "success");
   };
 
+  const isTeacher = role === "teacher";
+  const accountName = isTeacher ? currentUser?.name || "Teacher" : "AI Kisa Admin";
+  const initials = isTeacher ? currentUser?.initials || "T" : "AI";
+  const details = [
+    { label: "Portal access", value: isTeacher ? "Teacher Portal" : "Super Admin Portal" },
+    { label: "Assigned classes", value: isTeacher ? "Class 8 & Class 9" : "All school classes" },
+    { label: "Official email", value: currentUser?.email || "admin@aikisa.edu.pk", icon: AtSign },
+  ];
+
   return (
-    <div>
+    <div className="profile-page">
       <PageHead
         title="Profile & Identity"
-        sub="Your verified system credentials and developer identity across the AI KISA Model School portal."
+        sub="Your account details and the creator identity behind the AI KISA Model School portal."
       />
 
-      <div className="card" style={{ maxWidth: 640 }}>
-        <div className="profile-hero" style={{ marginBottom: 22 }}>
-          <div className="profile-avatar">
-            {role === "teacher" ? "AN" : "AI"}
-          </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 20 }}>
-              {role === "teacher" ? currentUser?.name : "Abeha Inam"}
+      <div className="profile-layout">
+        <motion.section className="card profile-account-card" variants={cardReveal} initial={shouldReduceMotion ? false : "hidden"} animate="visible" aria-labelledby="account-title">
+          <div className="profile-account-head">
+            <div className="profile-avatar" aria-hidden="true">{initials}</div>
+            <div className="profile-account-copy">
+              <span className="profile-eyebrow"><UserRound size={13} /> Verified account</span>
+              <h2 id="account-title">{accountName}</h2>
+              <p>{isTeacher ? "Teacher · English & Digital Media" : "Super Admin · School administration"}</p>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-mute)", marginTop: 2 }}>
-              {role === "teacher" ? "Teacher · English & Digital Media" : "Student / Developer · Class 10"}
-            </div>
+            <span className="badge badge-purple">{isTeacher ? "Teacher Access" : "Super Admin"}</span>
           </div>
-          <div style={{ marginLeft: "auto" }}>
-            <span className="badge badge-purple">
-              <ShieldCheck size={12} /> {role === "teacher" ? "Teacher Access" : "Super Admin"}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-2" style={{ marginBottom: 18 }}>
-          {[
-            { l: "Portal Tier", v: role === "teacher" ? "Teacher Portal" : "Super Admin Portal" },
-            { l: "Assigned Grade", v: role === "teacher" ? "Class 8 & Class 9" : "Class 10 / All School" },
-            { l: "Designed & Developed By", v: "Abeha Inam" },
-            { l: "System Architecture", v: "React.js · PHP PDO API · PostgreSQL" },
-            { l: "Official Email", v: currentUser?.email || "developer@aikisa.edu.pk" },
-            { l: "Contact Hotline", v: phone },
-          ].map((f, i) => (
-            <div key={i} style={{ padding: "8px 0" }}>
-              <div style={{ fontSize: 11, color: "var(--text-mute)", fontWeight: 700, marginBottom: 4 }}>
-                {f.l}
+          <div className="profile-detail-grid">
+            {details.map(({ label, value, icon: Icon }) => (
+              <div className="profile-detail" key={label}>
+                <div className="profile-detail-label">{label}</div>
+                <div className="profile-detail-value">{Icon && <Icon size={14} aria-hidden="true" />}<span>{value}</span></div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{f.v}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ fontSize: 11.5, color: "var(--text-mute)", fontWeight: 700, marginBottom: 8 }}>
-          About This Management System
-        </div>
-        <p style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--text-dim)", margin: "0 0 16px 0" }}>
-          {bio}
-        </p>
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-          <div className="badge badge-gray">
-            <Lock size={11} /> Core Developer Attribution Protected
+            ))}
           </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setIsEditModalOpen(true)}
-          >
-            <Edit2 size={12} /> Update Contact Info
-          </button>
-        </div>
-      </div>
+          <div className="profile-account-foot">
+            <div className="profile-status"><span /> Account active</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setIsEditModalOpen(true)}><Edit2 size={12} /> Edit profile info</button>
+          </div>
+        </motion.section>
 
-      <section className="developer-card" aria-labelledby="developer-attribution-title">
-        <div className="developer-card-icon" aria-hidden="true">
-          <Code2 size={20} />
-        </div>
-        <div className="developer-card-content">
-          <div className="developer-card-kicker"><Sparkles size={13} /> System Information</div>
+        <motion.section className="developer-card" variants={cardReveal} initial={shouldReduceMotion ? false : "hidden"} animate="visible" transition={{ delay: shouldReduceMotion ? 0 : 0.08 }} aria-labelledby="developer-attribution-title">
+          <div className="developer-card-kicker"><Sparkles size={13} /> Creator identity</div>
           <h2 id="developer-attribution-title">Designed &amp; Developed By</h2>
           <div className="developer-card-name">Abeha Inam</div>
-          <div className="developer-card-role">Sole Designer &amp; Lead Developer · System Architect</div>
-          <p>Designed and engineered by Abeha Inam to deliver a seamless, modern, and connected digital workflow for teachers and administration at AI KISA Model School.</p>
-          <div className="developer-card-stack" aria-label="System architecture">
-            <span>React.js <small>Frontend</small></span>
-            <span>PHP PDO API <small>Backend</small></span>
-            <span>PostgreSQL <small>Database</small></span>
-          </div>
-        </div>
-      </section>
+          <div className="developer-card-role">Designer · Developer · AI &amp; Digital Technology</div>
+          <p>{bio}</p>
+          <div className="developer-card-footer"><span className="badge badge-gray"><Lock size={11} /> Identity verified</span></div>
+        </motion.section>
+      </div>
 
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title="Update Profile Contact Info"
+        title="Update Profile Info"
         footer={
           <>
             <button
@@ -128,15 +99,7 @@ export function ProfilePage() {
       >
         <form onSubmit={handleSaveContact}>
           <div className="field-group">
-            <label className="field-label">Contact Phone</label>
-            <input
-              className="field-input"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-          <div className="field-group">
-            <label className="field-label">System Biography</label>
+            <label className="field-label">Creator Biography</label>
             <textarea
               className="field-input"
               rows={3}

@@ -1,71 +1,69 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { TEACHER_NAME, TEACHER_CLASSES } from "../constants/navigation";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [role, setRole] = useState(null); // null | 'teacher' | 'super_admin'
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [session, setSession] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("ai-kisa-session") || "null");
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
-    // Try to fetch current user if token present in sessionStorage
-    const saved = sessionStorage.getItem('aikisa_token');
-    if (saved) {
-      setToken(saved);
-      fetchCurrentUser(saved);
-    }
-  }, []);
-
-  const fetchCurrentUser = async (t) => {
-    try {
-      const res = await fetch('/backend/api/current_user.php', {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: 'include'
-      });
-      const json = await res.json();
-      if (json.success && json.data && json.data.user) {
-        const u = json.data.user;
-        setUser(u);
-        setRole(u.role === 'super_admin' ? 'super_admin' : 'teacher');
-      } else {
-        setUser(null); setRole(null); setToken(null); sessionStorage.removeItem('aikisa_token');
-      }
-    } catch (e) {
-      console.error('Failed to fetch current user', e);
-    }
-  };
+    if (session) sessionStorage.setItem("ai-kisa-session", JSON.stringify(session));
+    else sessionStorage.removeItem("ai-kisa-session");
+  }, [session]);
 
   const login = async (email, password) => {
-    try {
-      const res = await fetch('/backend/api/login.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        const t = json.data.token;
-        sessionStorage.setItem('aikisa_token', t);
-        setToken(t);
-        setUser(json.data.user);
-        setRole(json.data.user.role === 'super_admin' ? 'super_admin' : 'teacher');
-        return { success: true };
-      }
-      return { success: false, error: json.error || 'Login failed' };
-    } catch (error) {
-      return { success: false, error: 'The login service is currently unavailable. Please try again.' };
+    const response = await fetch("/backend/api/login.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || "Unable to sign in.");
     }
+    setSession(payload.data);
+    return payload.data.user;
   };
 
-  const logout = async () => {
-    await fetch('/backend/api/logout.php', { method: 'POST', credentials: 'include' });
-    sessionStorage.removeItem('aikisa_token');
-    setToken(null); setUser(null); setRole(null);
+  const logout = () => {
+    setSession(null);
   };
+
+  const user = session?.user;
+  const role = user?.role || null;
+  const currentUser = role === "teacher"
+    ? {
+        id: user.id,
+        name: user.name || TEACHER_NAME,
+        initials: (user.name || TEACHER_NAME).split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase(),
+        role: "teacher",
+        roleLabel: "Teacher",
+        subject: "English & Digital Media",
+        classes: TEACHER_CLASSES,
+        email: user.email
+      }
+    : role === "admin"
+    ? {
+        id: user.id,
+      name: user.name || "Abeha Inam",
+      initials: (user.name || "Abeha Inam").split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase(),
+        role: "admin",
+        roleLabel: "Super Admin",
+        subject: "School Administration & Development",
+        classes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        email: user.email
+      }
+    : null;
 
   return (
-    <AuthContext.Provider value={{ role, user, token, login, logout, setRole }}>
+    <AuthContext.Provider value={{ role, currentUser, token: session?.token || null, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

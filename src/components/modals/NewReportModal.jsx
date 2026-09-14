@@ -4,26 +4,27 @@ import { useData } from "../../context/DataContext";
 import { CLASS_NUMS } from "../../constants/navigation";
 
 export function NewReportModal({ isOpen, onClose }) {
-  const { submitReport } = useData();
+  const { submitReport, saving } = useData();
   const [title, setTitle] = useState("");
   const [cls, setCls] = useState("9");
   const [category, setCategory] = useState("Progress Report");
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
+  const isSubmitting = saving.reports;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
       setError("Please enter a title for the report.");
       return;
     }
 
-    submitReport({
-      title: title.trim(),
-      class: cls,
-      category,
-      content: content.trim()
-    });
+    try {
+      await submitReport({ title: title.trim(), class: cls, category, content: content.trim() });
+    } catch (submitError) {
+      setError(submitError.message || "Unable to submit this report.");
+      return;
+    }
 
     setTitle("");
     setCls("9");
@@ -43,8 +44,8 @@ export function NewReportModal({ isOpen, onClose }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            Submit for Approval
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit for Approval"}
           </button>
         </>
       }

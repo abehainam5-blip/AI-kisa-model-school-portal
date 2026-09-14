@@ -1,26 +1,36 @@
 <?php
+declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
+
 setCorsHeaders();
-session_start();
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    errorResponse('Method not allowed.', 405);
+}
 
 $body = getRequestBody();
-$email = trim($body['email'] ?? '');
-$password = $body['password'] ?? '';
+$email = strtolower(trim((string) ($body['email'] ?? '')));
+$password = (string) ($body['password'] ?? '');
 
-if (!$email || !$password) {
-    errorResponse('Email and password are required', 422);
+if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
+    errorResponse('Email and password are required.', 422);
 }
 
-$user = authenticateUser($email, $password);
-if (!$user) {
-    errorResponse('Invalid credentials', 401);
+try {
+    $statement = getDBConnection()->prepare(
+        'SELECT id, name, email, password, role, created_at FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1'
+    );
+    $statement->execute(['email' => $email]);
+    $user = $statement->fetch();
+
+    if (!$user || !password_verify($password, $user['password'])) {
+        errorResponse('Invalid email or password.', 401);
+    }
+
+    unset($user['password']);
+    successResponse([
+        'token' => generateToken($user),
+        'user' => $user,
+    ], 'Login successful.');
+} catch (Throwable $error) {
+    errorResponse('Unable to complete login.', 500);
 }
-
-// Generate a simple token and return user data
-$token = generateToken($user['id']);
-// Save session server-side for convenience
-$_SESSION['user_id'] = $user['id'];
-$_SESSION['role'] = $user['role'];
-
-successResponse(['token' => $token, 'user' => $user], 'Authenticated');
-?>

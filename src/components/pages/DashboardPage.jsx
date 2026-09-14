@@ -18,6 +18,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
 import { MONTHLY_TREND } from "../../data/mockData";
 import { TEACHER_NAME, TEACHER_CLASSES } from "../../constants/navigation";
+import { motion } from "framer-motion";
+import { adminStagger, teacherStagger, useMotionConfig } from "../common/Motion";
 
 export function DashboardPage({ setPage }) {
   const { role } = useAuth();
@@ -27,6 +29,7 @@ export function DashboardPage({ setPage }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const isTeacher = role === "teacher";
+  const { shouldReduceMotion } = useMotionConfig();
   const students = roleStudents;
 
   const avgAttendance = students.length
@@ -61,19 +64,29 @@ export function DashboardPage({ setPage }) {
         >
           <CalendarIcon size={14} /> Today
         </button>
-        <button
+          <motion.button
           className="btn btn-primary btn-sm"
           onClick={() => {
             if (isTeacher) setIsTaskModalOpen(true);
             else setIsReportModalOpen(true);
           }}
+          whileHover={shouldReduceMotion ? undefined : { scale: 1.03 }}
+          whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
+          animate={!isTeacher && !shouldReduceMotion ? { boxShadow: ["0 0 0 rgba(168,85,247,0)", "0 0 18px rgba(168,85,247,0.35)", "0 0 0 rgba(168,85,247,0)"] } : undefined}
+          transition={!isTeacher && !shouldReduceMotion ? { duration: 2.4, repeat: Infinity } : undefined}
         >
           <Plus size={14} /> {isTeacher ? "Log Task" : "New Announcement"}
-        </button>
+          </motion.button>
       </PageHead>
 
       {/* 4 Stat KPI Cards */}
-      <div className="grid grid-4" style={{ marginBottom: 18 }}>
+      <motion.div
+        className="grid grid-4"
+        style={{ marginBottom: 18 }}
+        variants={isTeacher ? teacherStagger : adminStagger}
+        initial={shouldReduceMotion ? false : "hidden"}
+        animate="visible"
+      >
         <StatCard
           icon={Users}
           label={isTeacher ? "My Students" : "Total Students"}
@@ -101,7 +114,7 @@ export function DashboardPage({ setPage }) {
           trend="1.8%"
           trendDir="down"
         />
-      </div>
+      </motion.div>
 
       {/* Chart Section */}
       <div className="grid" style={{ gridTemplateColumns: "1.7fr 1fr", marginBottom: 18 }}>

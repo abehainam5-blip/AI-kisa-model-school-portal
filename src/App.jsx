@@ -26,11 +26,18 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { DataProvider } from "./context/DataContext";
 import { Sun, Moon } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { MotionPage } from "./components/common/Motion";
+import { TEACHER_NAV, ADMIN_NAV } from "./constants/navigation";
 
 function MainRouter() {
   const { role } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [page, setPage] = useState("dashboard");
+  const allowedPages = new Set((role === "teacher" ? TEACHER_NAV : ADMIN_NAV).map((item) => item.key));
+  const navigate = (nextPage) => {
+    if (allowedPages.has(nextPage)) setPage(nextPage);
+  };
 
   // Reset to dashboard when role switches
   useEffect(() => {
@@ -61,7 +68,7 @@ function MainRouter() {
     if (role === "teacher") {
       switch (page) {
         case "dashboard":
-          return <DashboardPage setPage={setPage} />;
+          return <DashboardPage setPage={navigate} />;
         case "students":
           return <StudentsPage />;
         case "tasks":
@@ -87,13 +94,13 @@ function MainRouter() {
         case "profile":
           return <ProfilePage />;
         default:
-          return <DashboardPage setPage={setPage} />;
+          return <DashboardPage setPage={navigate} />;
       }
-    } else if (role === 'super_admin') {
+    } else {
       // Super Admin Portal
       switch (page) {
         case "dashboard":
-          return <DashboardPage setPage={setPage} />;
+          return <DashboardPage setPage={navigate} />;
         case "teachers":
           return <TeachersPage />;
         case "students":
@@ -125,22 +132,18 @@ function MainRouter() {
         case "profile":
           return <ProfilePage />;
         default:
-          return <DashboardPage setPage={setPage} />;
+          return <DashboardPage setPage={navigate} />;
       }
-    } else {
-      // Unknown role or fallback — deny access to protected pages
-      return (
-        <div className="card">
-          <h3>Access Denied</h3>
-          <p>You do not have permission to access this portal.</p>
-        </div>
-      );
     }
   };
 
   return (
-    <Shell page={page} setPage={setPage}>
-      {renderPage()}
+    <Shell page={page} setPage={navigate}>
+      <AnimatePresence mode="wait" initial={false}>
+        <MotionPage pageKey={`${role}:${page}`}>
+          {renderPage()}
+        </MotionPage>
+      </AnimatePresence>
     </Shell>
   );
 }

@@ -3,10 +3,13 @@ import { AlertTriangle, Check, FileText, Bell, Trash2, CheckCheck } from "lucide
 import { PageHead } from "../common/PageHead";
 import { EmptyState } from "../common/EmptyState";
 import { useData } from "../../context/DataContext";
+import { AnimatePresence, motion } from "framer-motion";
+import { useMotionConfig } from "../common/Motion";
 
 export function NotificationsPage() {
   const { notifications, markNotificationRead, markAllNotificationsRead, clearNotification } = useData();
   const [filterType, setFilterType] = useState("all");
+  const { shouldReduceMotion } = useMotionConfig();
 
   const iconFor = (type) => {
     if (type === "alert") return AlertTriangle;
@@ -61,11 +64,12 @@ export function NotificationsPage() {
           />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <AnimatePresence initial={false}>
             {filtered.map((n, i) => {
               const Icon = iconFor(n.type);
               const color = colorFor(n.type);
               return (
-                <div
+                <motion.div
                   key={n.id}
                   onClick={() => markNotificationRead(n.id)}
                   style={{
@@ -79,6 +83,11 @@ export function NotificationsPage() {
                     borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none",
                     transition: "background .15s ease"
                   }}
+                  layout
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, x: -14, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.22 }}
                 >
                   <div
                     style={{
@@ -131,9 +140,10 @@ export function NotificationsPage() {
                   >
                     <Trash2 size={12} />
                   </button>
-                </div>
+                </motion.div>
               );
             })}
+            </AnimatePresence>
           </div>
         )}
       </div>

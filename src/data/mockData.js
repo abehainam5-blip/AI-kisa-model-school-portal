@@ -57,7 +57,6 @@ export function buildStudents() {
         present: seededRand(id * 9.1) > 0.22,
         gender: id % 2 === 0 ? "Female" : "Male",
         email: `${fn.toLowerCase()}.${ln.toLowerCase()}@aikisa.edu.pk`,
-        guardianContact: `+92 300 ${1000000 + (id * 8923) % 8999999}`,
       });
       id++;
     }
@@ -68,11 +67,11 @@ export function buildStudents() {
 export const INITIAL_STUDENTS = buildStudents();
 
 export const INITIAL_TEACHERS = [
-  { id: 1, name: "Ms. Areeba Nadeem", subject: "English & Digital Media", classes: [8, 9], rating: 4.8, status: "Active", email: "areeba.nadeem@aikisa.edu.pk", phone: "+92 321 4567890" },
-  { id: 2, name: "Mr. Bilal Hassan", subject: "Computer Science", classes: [6, 7], rating: 4.6, status: "Active", email: "bilal.hassan@aikisa.edu.pk", phone: "+92 333 5678901" },
-  { id: 3, name: "Mrs. Sana Iqbal", subject: "Mathematics", classes: [3, 4, 5], rating: 4.9, status: "Active", email: "sana.iqbal@aikisa.edu.pk", phone: "+92 345 6789012" },
-  { id: 4, name: "Mr. Danish Farooq", subject: "Social Studies", classes: [1, 2], rating: 4.5, status: "On Leave", email: "danish.farooq@aikisa.edu.pk", phone: "+92 312 7890123" },
-  { id: 5, name: "Ms. Iqra Malik", subject: "Islamiat & Urdu", classes: [10], rating: 4.7, status: "Active", email: "iqra.malik@aikisa.edu.pk", phone: "+92 301 8901234" },
+  { id: 1, name: "Ms. Areeba Nadeem", subject: "English & Digital Media", classes: [8, 9], rating: 4.8, status: "Active", email: "areeba.nadeem@aikisa.edu.pk" },
+  { id: 2, name: "Mr. Bilal Hassan", subject: "Computer Science", classes: [6, 7], rating: 4.6, status: "Active", email: "bilal.hassan@aikisa.edu.pk" },
+  { id: 3, name: "Mrs. Sana Iqbal", subject: "Mathematics", classes: [3, 4, 5], rating: 4.9, status: "Active", email: "sana.iqbal@aikisa.edu.pk" },
+  { id: 4, name: "Mr. Danish Farooq", subject: "Social Studies", classes: [1, 2], rating: 4.5, status: "On Leave", email: "danish.farooq@aikisa.edu.pk" },
+  { id: 5, name: "Ms. Iqra Malik", subject: "Islamiat & Urdu", classes: [10], rating: 4.7, status: "Active", email: "iqra.malik@aikisa.edu.pk" },
 ];
 
 export const MONTHLY_TREND = MONTHS.slice(0, 9).map((m, i) => ({

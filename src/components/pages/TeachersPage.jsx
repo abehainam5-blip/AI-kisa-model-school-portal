@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Star, Users, BookOpen, Mail, Phone } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { PageHead } from "../common/PageHead";
 import { Avatar } from "../common/Avatar";
 import { AddTeacherModal } from "../modals/AddTeacherModal";

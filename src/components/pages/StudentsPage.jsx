@@ -9,9 +9,12 @@ import { AddStudentModal } from "../modals/AddStudentModal";
 import { StudentDetailsModal } from "../modals/StudentDetailsModal";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
+import { motion } from "framer-motion";
+import { useMotionConfig } from "../common/Motion";
 
 export function StudentsPage() {
   const { role } = useAuth();
+  const { shouldReduceMotion } = useMotionConfig();
   const { roleStudents, attendance, deleteStudent, globalSearch } = useData();
 
   const [localQuery, setLocalQuery] = useState("");
@@ -170,7 +173,13 @@ export function StudentsPage() {
                 {filtered.map((s) => {
                   const isPresent = attendance[s.id] !== false;
                   return (
-                    <tr key={s.id}>
+                    <motion.tr
+                      key={s.id}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: shouldReduceMotion ? 0 : 0.24, delay: shouldReduceMotion ? 0 : role === "teacher" ? 0.06 : 0.03 }}
+                      whileHover={shouldReduceMotion ? undefined : { backgroundColor: "rgba(168,85,247,0.06)" }}
+                    >
                       <td>
                         <div
                           style={{
@@ -248,7 +257,7 @@ export function StudentsPage() {
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>

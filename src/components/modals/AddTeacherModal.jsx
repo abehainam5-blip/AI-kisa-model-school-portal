@@ -4,13 +4,14 @@ import { useData } from "../../context/DataContext";
 import { CLASS_NUMS } from "../../constants/navigation";
 
 export function AddTeacherModal({ isOpen, onClose }) {
-  const { addTeacher } = useData();
+  const { addTeacher, saving } = useData();
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [selectedClasses, setSelectedClasses] = useState([8, 9]);
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const isSubmitting = saving.teachers;
 
   const toggleClass = (c) => {
     setSelectedClasses((prev) =>
@@ -18,7 +19,7 @@ export function AddTeacherModal({ isOpen, onClose }) {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setError("Please enter the teacher's full name.");
@@ -32,20 +33,27 @@ export function AddTeacherModal({ isOpen, onClose }) {
       setError("Please assign at least one class.");
       return;
     }
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("Please enter a valid unique email address.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
 
-    addTeacher({
-      name: name.trim(),
-      subject: subject.trim(),
-      classes: selectedClasses,
-      email: email.trim(),
-      phone: phone.trim()
-    });
+    try {
+      await addTeacher({ name: name.trim(), subject: subject.trim(), classes: selectedClasses, email: email.trim(), password });
+    } catch (submitError) {
+      setError(submitError.message || "Unable to save this teacher.");
+      return;
+    }
 
     setName("");
     setSubject("");
     setSelectedClasses([8, 9]);
     setEmail("");
-    setPhone("");
+    setPassword("");
     setError("");
     onClose();
   };
@@ -60,8 +68,8 @@ export function AddTeacherModal({ isOpen, onClose }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            Save Teacher
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Teacher"}
           </button>
         </>
       }
@@ -131,12 +139,14 @@ export function AddTeacherModal({ isOpen, onClose }) {
             />
           </div>
           <div>
-            <label className="field-label">Contact Phone</label>
+            <label className="field-label">Initial Password *</label>
             <input
+              type="password"
               className="field-input"
-              placeholder="+92 300 0000000"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              autoComplete="new-password"
             />
           </div>
         </div>

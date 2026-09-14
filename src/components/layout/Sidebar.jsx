@@ -19,7 +19,7 @@ export function Sidebar({ page, setPage, collapsed, mobileOpen, setMobileOpen })
     >
       <div className="sb-brand">
         <div className="sb-logo-wrap">
-          <img src={LOGO_SRC || '/favicon.svg'} alt="AI KISA Logo" />
+          <img src={LOGO_SRC} alt="AI KISA Logo" />
         </div>
         <div className="sb-brand-text">
           <div className="t1">AI KISA Model School</div>

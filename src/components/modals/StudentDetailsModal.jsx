@@ -2,7 +2,7 @@ import React from "react";
 import { Modal } from "../common/Modal";
 import { Avatar } from "../common/Avatar";
 import { ProgressBar } from "../common/ProgressBar";
-import { Check, X, Star, Mail, Phone, Calendar, Award } from "lucide-react";
+import { Check, X, Star, Mail, Calendar, Award } from "lucide-react";
 import { useData } from "../../context/DataContext";
 
 export function StudentDetailsModal({ student, isOpen, onClose }) {
@@ -118,16 +118,12 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
 
       <div className="card card-tight" style={{ background: "var(--surface2)" }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-mute)", marginBottom: 8 }}>
-          Contact & Guardian Information
+          Student Contact Information
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Mail size={14} color="var(--accent)" />
             <span>{student.email || `${student.name.toLowerCase().replace(/\s+/g, ".")}@aikisa.edu.pk`}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Phone size={14} color="var(--success)" />
-            <span>{student.guardianContact || "+92 300 1234567"}</span>
           </div>
         </div>
       </div>

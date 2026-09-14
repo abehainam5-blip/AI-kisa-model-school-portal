@@ -5,19 +5,30 @@ import { Avatar } from "../common/Avatar";
 import { EmptyState } from "../common/EmptyState";
 import { TASK_TYPES } from "../../constants/taskTypes";
 import { useData } from "../../context/DataContext";
+import { motion } from "framer-motion";
+import { useMotionConfig } from "../common/Motion";
 
 export function DailyTasksPage() {
-  const { roleStudents, tasksLog, assignTask } = useData();
+  const { roleStudents, tasksLog, assignTask, saving } = useData();
   const [selectedStudent, setSelectedStudent] = useState(roleStudents[0]?.id || "");
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskNote, setTaskNote] = useState("");
   const [logSearch, setLogSearch] = useState("");
+  const [error, setError] = useState("");
+  const isSubmitting = saving.tasks;
+  const { shouldReduceMotion } = useMotionConfig();
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!selectedStudent || !selectedTask) return;
-    assignTask(Number(selectedStudent), selectedTask, taskNote.trim());
+    try {
+      await assignTask(Number(selectedStudent), selectedTask, taskNote.trim());
+    } catch (submitError) {
+      setError(submitError.message || "Unable to save this activity.");
+      return;
+    }
     setSelectedTask(null);
     setTaskNote("");
+    setError("");
   };
 
   const filteredLog = tasksLog.filter((l) =>
@@ -88,13 +99,14 @@ export function DailyTasksPage() {
             />
           </div>
 
+          {error && <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,113,133,0.15)", color: "var(--danger)", fontSize: 12, marginTop: 12 }}>{error}</div>}
           <button
             className="btn btn-primary"
             style={{ marginTop: 6 }}
-            disabled={!selectedTask || !selectedStudent}
+            disabled={!selectedTask || !selectedStudent || isSubmitting}
             onClick={handleAssign}
           >
-            <Check size={14} /> Assign Task
+            <Check size={14} /> {isSubmitting ? "Saving..." : "Assign Task"}
           </button>
         </div>
 
@@ -131,7 +143,7 @@ export function DailyTasksPage() {
               }}
             >
               {filteredLog.map((l) => (
-                <div
+                <motion.div
                   key={l.id}
                   style={{
                     display: "flex",
@@ -142,6 +154,9 @@ export function DailyTasksPage() {
                     borderRadius: 12,
                     border: "1px solid var(--border)"
                   }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.24 }}
                 >
                   <Avatar name={l.student} hue={(l.student?.length || 1) * 37} size={32} radius={9} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -155,7 +170,7 @@ export function DailyTasksPage() {
                   <div style={{ fontSize: 10.5, color: "var(--text-mute)", flexShrink: 0 }}>
                     {l.time}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
