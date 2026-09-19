@@ -4,9 +4,10 @@ import { Avatar } from "../common/Avatar";
 import { ProgressBar } from "../common/ProgressBar";
 import { Check, X, Star, Mail, Calendar, Award } from "lucide-react";
 import { useData } from "../../context/DataContext";
+import { CertificateButton } from "../common/CertificateButton";
 
 export function StudentDetailsModal({ student, isOpen, onClose }) {
-  const { attendance, setStudentAttendance } = useData();
+  const { attendance, setStudentAttendance, weeklyInsights } = useData();
   if (!student) return null;
 
   const isPresent = attendance[student.id] !== false;
@@ -20,6 +21,7 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
       : student.performance >= 60
       ? "C"
       : "D";
+  const weekly = weeklyInsights.byStudent.find((item) => item.student.id === student.id);
 
   return (
     <Modal
@@ -89,6 +91,13 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
           </div>
           <div style={{ fontSize: 20, fontWeight: 800 }}>{student.tasksCompleted || 0}</div>
           <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 6 }}>This Month</div>
+        </div>
+      </div>
+
+      <div className="card card-tight" style={{ marginBottom: 18, background: "linear-gradient(135deg, rgba(168,85,247,0.12), var(--surface2))" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div><div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-mute)" }}>Weekly Progress Report Card</div><div style={{ marginTop: 6, fontSize: 13 }}>Task mastery <b style={{ color: "var(--accent)" }}>{weekly?.mastery || 0}%</b> · {weekly?.completed || 0} completed · {weekly?.pending || 0} pending</div><div style={{ marginTop: 5, fontSize: 11, color: "var(--text-mute)" }}>Weak area: {weekly?.weak || student.weakPoints?.[0] || "Consistency"}</div></div>
+          <CertificateButton student={student} />
         </div>
       </div>
 

@@ -15,6 +15,10 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
     errorResponse('Email and password are required.', 422);
 }
 
+if (!in_array($email, MASTER_EMAILS, true)) {
+    errorResponse('Invalid email or password.', 401);
+}
+
 try {
     $statement = getDBConnection()->prepare(
         'SELECT id, name, email, password, role, created_at FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1'

@@ -3,14 +3,16 @@ import { OrbBackground } from "./OrbBackground";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
 export function Shell({ page, setPage, children }) {
   const { theme } = useTheme();
+  const { role } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className={`app-root theme-${theme}`}>
+    <div className={`app-root theme-${theme} role-${role || "guest"}`}>
       <OrbBackground />
 
       {/* Mobile backdrop overlay */}

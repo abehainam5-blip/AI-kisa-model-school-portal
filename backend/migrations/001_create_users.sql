@@ -15,10 +15,4 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique
     ON users (LOWER(email));
 
-INSERT INTO users (name, email, password, role)
-VALUES
-    ('Abeha Inam', 'admin@aikisa.edu.pk', crypt('Admin123!', gen_salt('bf')), 'admin'),
-    ('Ms. Areeba Nadeem', 'areeba.nadeem@aikisa.edu.pk', crypt('Teacher123!', gen_salt('bf')), 'teacher')
-ON CONFLICT (email) DO NOTHING;
-
 COMMIT;

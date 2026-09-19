@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, Search } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import { PageHead, SectionHead } from "../common/PageHead";
 import { Avatar } from "../common/Avatar";
 import { EmptyState } from "../common/EmptyState";
@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useMotionConfig } from "../common/Motion";
 
 export function DailyTasksPage() {
-  const { roleStudents, tasksLog, assignTask, saving } = useData();
+  const { roleStudents, tasksLog, assignTask, setTaskStatus, weeklyInsights, dailyInsights, saving } = useData();
   const [selectedStudent, setSelectedStudent] = useState(roleStudents[0]?.id || "");
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskNote, setTaskNote] = useState("");
@@ -114,7 +114,7 @@ export function DailyTasksPage() {
         <div className="card">
           <SectionHead
             title="Today's Activity Log"
-            sub={`${tasksLog.length} tasks recorded today`}
+            sub={`${weeklyInsights.completed} done · ${weeklyInsights.pending} pending this week`}
           />
 
           <div className="search-wrap" style={{ maxWidth: "100%", marginBottom: 14 }}>
@@ -170,10 +170,41 @@ export function DailyTasksPage() {
                   <div style={{ fontSize: 10.5, color: "var(--text-mute)", flexShrink: 0 }}>
                     {l.time}
                   </div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button className={`icon-btn ${l.status !== "not_done" ? "active" : ""}`} style={{ width: 28, height: 28 }} onClick={() => setTaskStatus(l.id, "done")} title="Mark done" aria-label="Mark task done"><Check size={13} /></button>
+                    <button className={`icon-btn ${l.status === "not_done" ? "active" : ""}`} style={{ width: 28, height: 28, color: l.status === "not_done" ? "var(--danger)" : undefined }} onClick={() => setTaskStatus(l.id, "not_done")} title="Mark not done" aria-label="Mark task not done"><X size={13} /></button>
+                  </div>
                 </motion.div>
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <SectionHead title="End-of-Week Summary" sub="Completed, pending, and focus areas by student" />
+        <div className="grid grid-3">
+          {weeklyInsights.byStudent.map(({ student, total, completed, pending, mastery, progress, weak }) => (
+            <div key={student.id} style={{ padding: 12, borderRadius: 12, background: "var(--surface2)", border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}><Avatar name={student.name} hue={student.avatarHue} size={28} radius={8} /><b style={{ fontSize: 12 }}>{student.name}</b></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-mute)" }}><span>{completed}/{total || 0} complete</span><b style={{ color: "var(--accent)" }}>{mastery}%</b></div>
+              <div style={{ marginTop: 7, fontSize: 11, color: "var(--text-dim)" }}>{progress}</div>
+              <div style={{ marginTop: 4, fontSize: 11, color: pending > 0 ? "var(--danger)" : "var(--success)" }}>Focus: {pending > 0 ? weak : "No neglected area"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <SectionHead title="Today's Student Breakdown" sub="Completed and missed tasks for the current day" />
+        <div className="grid grid-3">
+          {dailyInsights.map(({ student, completed, missed }) => (
+            <div key={student.id} style={{ padding: 12, borderRadius: 12, background: "var(--surface2)", border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}><Avatar name={student.name} hue={student.avatarHue} size={28} radius={8} /><b style={{ fontSize: 12 }}>{student.name}</b></div>
+              <div style={{ fontSize: 11, color: "var(--success)" }}>Done: {completed.map((task) => task.task).join(", ") || "None"}</div>
+              <div style={{ marginTop: 5, fontSize: 11, color: "var(--danger)" }}>Not done: {missed.map((task) => task.task).join(", ") || "None"}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

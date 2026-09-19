@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import {
   INITIAL_STUDENTS,
   INITIAL_TEACHERS,
@@ -14,6 +14,18 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
 
 const DataContext = createContext();
+
+const dateKey = (date = new Date()) => {
+  const value = date instanceof Date ? date : new Date(date);
+  return value.toISOString().slice(0, 10);
+};
+
+const startOfWeek = (date = new Date()) => {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  value.setDate(value.getDate() - 6);
+  return value;
+};
 
 export function DataProvider({ children }) {
   const { currentUser, role, token } = useAuth();
@@ -36,12 +48,64 @@ export function DataProvider({ children }) {
     });
     return init;
   });
+  const [attendanceHistory, setAttendanceHistory] = useState(() => ({
+    [new Date().toISOString().slice(0, 10)]: INITIAL_STUDENTS.reduce((map, student) => {
+      map[student.id] = student.present;
+      return map;
+    }, {})
+  }));
 
   // Daily Tasks running log
   const [tasksLog, setTasksLog] = useState([
-    { id: 1, studentId: 1, student: INITIAL_STUDENTS[0]?.name, task: "Canva Post", time: "9:20 AM" },
-    { id: 2, studentId: 2, student: INITIAL_STUDENTS[1]?.name, task: "Coding", time: "10:05 AM" },
+    { id: 1, studentId: 1, student: INITIAL_STUDENTS[0]?.name, task: "Canva Post", time: "9:20 AM", status: "done", date: dateKey() },
+    { id: 2, studentId: 2, student: INITIAL_STUDENTS[1]?.name, task: "Coding", time: "10:05 AM", status: "not_done", date: dateKey() },
   ]);
+
+  const [activeSessions, setActiveSessions] = useState(() => ({
+    [currentUser?.email || "teacher@aikisa.edu.pk"]: { name: currentUser?.name || "Current user", role, lastSeen: Date.now() }
+  }));
+
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    setActiveSessions((prev) => ({
+      ...prev,
+      [currentUser.email]: { name: currentUser.name, role, lastSeen: Date.now() }
+    }));
+    const timer = window.setInterval(() => {
+      setActiveSessions((prev) => ({
+        ...prev,
+        [currentUser.email]: { name: currentUser.name, role, lastSeen: Date.now() }
+      }));
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [currentUser, role]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/backend/api/progress.php?from=' + dateKey(startOfWeek()) + '&to=' + dateKey(), {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (!payload?.success) return;
+        const remoteTasks = (payload.data?.tasks || []).map((task) => ({
+          id: Number(task.id), studentId: Number(task.student_id),
+          student: students.find((student) => student.id === Number(task.student_id))?.name || 'Student',
+          task: task.task, status: task.status, date: task.task_date,
+          time: new Date(task.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        }));
+        if (remoteTasks.length) setTasksLog((previous) => [...remoteTasks, ...previous.filter((task) => !remoteTasks.some((remote) => remote.id === task.id))]);
+        const remoteAttendance = payload.data?.attendance || [];
+        if (remoteAttendance.length) setAttendanceHistory((previous) => {
+          const next = { ...previous };
+          remoteAttendance.forEach((record) => {
+            next[record.attendance_date] = { ...(next[record.attendance_date] || {}), [Number(record.student_id)]: record.present === true || record.present === 't' };
+          });
+          return next;
+        });
+      })
+      .catch(() => undefined);
+  }, [token, students]);
 
   // Filter students based on active role
   const roleStudents = useMemo(() => {
@@ -144,14 +208,26 @@ export function DataProvider({ children }) {
   };
 
   // Attendance Actions
-  const setStudentAttendance = (studentId, isPresent) => {
+  const setStudentAttendance = (studentId, isPresent, selectedDate = dateKey()) => {
+    const date = dateKey(selectedDate);
     setAttendance((prev) => ({ ...prev, [studentId]: isPresent }));
+    setAttendanceHistory((prev) => ({
+      ...prev,
+      [date]: { ...(prev[date] || {}), [studentId]: isPresent }
+    }));
     setStudents((prev) =>
       prev.map((s) => (s.id === studentId ? { ...s, present: isPresent } : s))
     );
+    if (token) {
+      fetch('/backend/api/progress.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: 'attendance', student_id: studentId, present: isPresent, date })
+      }).catch(() => showToast('Attendance is only saved locally until the server reconnects.', 'error'));
+    }
   };
 
-  const markAllAttendance = (studentIds, isPresent) => {
+  const markAllAttendance = (studentIds, isPresent, selectedDate = dateKey()) => {
+    const date = dateKey(selectedDate);
     setAttendance((prev) => {
       const next = { ...prev };
       studentIds.forEach((id) => {
@@ -159,6 +235,10 @@ export function DataProvider({ children }) {
       });
       return next;
     });
+    setAttendanceHistory((prev) => ({
+      ...prev,
+      [date]: { ...(prev[date] || {}), ...Object.fromEntries(studentIds.map((id) => [id, isPresent])) }
+    }));
     setStudents((prev) =>
       prev.map((s) => (studentIds.includes(s.id) ? { ...s, present: isPresent } : s))
     );
@@ -173,7 +253,7 @@ export function DataProvider({ children }) {
   };
 
   // Task Actions
-  const assignTask = (studentId, taskKey, customNote = "") => runMutation("tasks", async () => {
+  const assignTask = async (studentId, taskKey, customNote = "", selectedDate = dateKey()) => runMutation("tasks", async () => {
     const student = students.find((s) => s.id === studentId);
     const taskDef = TASK_TYPES.find((t) => t.key === taskKey);
     if (!student || !taskDef) throw new Error("Please select a valid student and task.");
@@ -183,10 +263,20 @@ export function DataProvider({ children }) {
       studentId,
       student: student.name,
       task: taskDef.label + (customNote ? ` (${customNote})` : ""),
-      time: "Just now"
+      time: "Just now",
+      date: dateKey(selectedDate),
+      status: "done"
     };
 
     setTasksLog((prev) => [newLogItem, ...prev]);
+
+    if (token) {
+      const response = await fetch('/backend/api/progress.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ student_id: studentId, task: newLogItem.task, status: newLogItem.status, date: newLogItem.date })
+      });
+      if (!response.ok) throw new Error('Unable to save the task to the server.');
+    }
 
     // Increment completed tasks
     setStudents((prev) =>
@@ -199,6 +289,60 @@ export function DataProvider({ children }) {
     showToast(`Assigned ${taskDef.label} to ${student.name}`, "success");
     return newLogItem;
   });
+
+  const setTaskStatus = (taskId, status) => {
+    setTasksLog((prev) => prev.map((task) => task.id === taskId ? { ...task, status } : task));
+    const task = tasksLog.find((item) => item.id === taskId);
+    if (task) logAudit(status === "done" ? "Marked task done" : "Marked task not done", `${task.task} → ${task.student}`);
+    if (task && token) {
+      fetch('/backend/api/progress.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ student_id: task.studentId, task: task.task, status, date: task.date })
+      }).catch(() => showToast('Task status is only saved locally until the server reconnects.', 'error'));
+    }
+  };
+
+  const weeklyInsights = useMemo(() => {
+    const taskRows = roleStudents.map((student) => {
+      const rows = tasksLog.filter((task) => task.studentId === student.id && new Date(`${task.date}T00:00:00`) >= startOfWeek());
+      const completed = rows.filter((task) => task.status !== "not_done").length;
+      const pending = rows.length - completed;
+      const mastery = rows.length ? Math.round((completed / rows.length) * 100) : 0;
+      const weak = student.weakPoints?.[0] || "Consistency";
+      const progress = mastery >= 80 ? "Strong task mastery" : mastery >= 50 ? "Steady progress" : "Needs weekly support";
+      return { student, total: rows.length, completed, pending, mastery, weak, progress, neglected: pending > completed ? [weak] : [] };
+    });
+    const total = taskRows.reduce((sum, row) => sum + row.total, 0);
+    const completed = taskRows.reduce((sum, row) => sum + row.completed, 0);
+    return {
+      byStudent: taskRows,
+      total,
+      completed,
+      pending: total - completed,
+      completionRate: total ? Math.round((completed / total) * 100) : 0
+    };
+  }, [roleStudents, tasksLog]);
+
+  const dailyInsights = useMemo(() => {
+    const today = dateKey();
+    return roleStudents.map((student) => {
+      const rows = tasksLog.filter((task) => task.studentId === student.id && task.date === today);
+      return {
+        student,
+        completed: rows.filter((task) => task.status !== "not_done"),
+        missed: rows.filter((task) => task.status === "not_done")
+      };
+    });
+  }, [roleStudents, tasksLog]);
+
+  const teacherAnalytics = useMemo(() => teachers.map((teacher) => {
+    const teacherStudents = students.filter((student) => teacher.classes.includes(student.class));
+    const rows = teacherStudents.flatMap((student) => tasksLog.filter((task) => task.studentId === student.id));
+    const top = [...teacherStudents].sort((a, b) => b.performance - a.performance)[0];
+    const weakest = [...teacherStudents].sort((a, b) => a.performance - b.performance)[0];
+    const completed = rows.filter((task) => task.status !== "not_done").length;
+    return { teacher, top, weakest, totalTasks: rows.length, completedTasks: completed, missedTasks: rows.length - completed };
+  }), [teachers, students, tasksLog]);
 
   // Teacher Actions
   const addTeacher = (teacherData) => runMutation("teachers", async () => {
@@ -334,7 +478,13 @@ export function DataProvider({ children }) {
         notifications,
         calendarEvents,
         attendance,
+        attendanceHistory,
         tasksLog,
+        setTaskStatus,
+        weeklyInsights,
+        dailyInsights,
+        teacherAnalytics,
+        activeSessions,
         globalSearch,
         setGlobalSearch,
         addStudent,

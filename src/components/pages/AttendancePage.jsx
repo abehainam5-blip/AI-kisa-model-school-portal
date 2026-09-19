@@ -7,9 +7,11 @@ import { EmptyState } from "../common/EmptyState";
 import { useData } from "../../context/DataContext";
 
 export function AttendancePage() {
-  const { roleStudents, attendance, setStudentAttendance, markAllAttendance } = useData();
+  const { roleStudents, attendance, attendanceHistory, setStudentAttendance, markAllAttendance } = useData();
   const [selectedClass, setSelectedClass] = useState("all");
-  const [currentDate, setCurrentDate] = useState("2026-09-04");
+  const [currentDate, setCurrentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
   const classes = useMemo(() => {
     return Array.from(new Set(roleStudents.map((s) => s.class))).sort((a, b) => a - b);
@@ -28,8 +30,13 @@ export function AttendancePage() {
 
   const handleMarkAll = (val) => {
     const ids = filteredStudents.map((s) => s.id);
-    markAllAttendance(ids, val);
+    markAllAttendance(ids, val, currentDate);
   };
+
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const monthStart = new Date(calendarYear, calendarMonth, 1).getDay();
+  const calendarCells = Array.from({ length: monthStart }, () => null).concat(Array.from({ length: daysInMonth }, (_, index) => index + 1));
+  const monthName = new Date(calendarYear, calendarMonth, 1).toLocaleString("en-US", { month: "long" });
 
   return (
     <div>
@@ -146,13 +153,13 @@ export function AttendancePage() {
                         <div className="toggle-pill">
                           <button
                             className={isPresent ? "active" : ""}
-                            onClick={() => setStudentAttendance(s.id, true)}
+                            onClick={() => setStudentAttendance(s.id, true, currentDate)}
                           >
                             Present
                           </button>
                           <button
                             className={!isPresent ? "active danger-active" : ""}
-                            onClick={() => setStudentAttendance(s.id, false)}
+                            onClick={() => setStudentAttendance(s.id, false, currentDate)}
                           >
                             Absent
                           </button>
@@ -165,6 +172,27 @@ export function AttendancePage() {
             </table>
           </div>
         )}
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+          <div><h3 className="section-title">Monthly Attendance View</h3><p className="section-sub" style={{ marginBottom: 0 }}>Daily register history for the selected class</p></div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { const next = calendarMonth - 1; if (next < 0) { setCalendarMonth(11); setCalendarYear(calendarYear - 1); } else setCalendarMonth(next); }}>Prev</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { const next = calendarMonth + 1; if (next > 11) { setCalendarMonth(0); setCalendarYear(calendarYear + 1); } else setCalendarMonth(next); }}>Next</button>
+          </div>
+        </div>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>{monthName} {calendarYear}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 7 }}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div key={day} style={{ textAlign: "center", fontSize: 10, color: "var(--text-mute)" }}>{day}</div>)}
+          {calendarCells.map((day, index) => {
+            const dateKey = day ? `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` : "";
+            const record = dateKey ? attendanceHistory[dateKey] : null;
+            const marked = record ? Object.values(record) : [];
+            const rate = marked.length ? Math.round(marked.filter(Boolean).length / marked.length * 100) : null;
+            return <div key={index} style={{ minHeight: 48, borderRadius: 9, padding: 6, background: day ? "var(--surface2)" : "transparent", border: day ? "1px solid var(--border)" : "none", fontSize: 11, color: day ? "var(--text)" : "transparent" }}><b>{day}</b>{rate !== null && <div style={{ marginTop: 5, fontSize: 9, color: rate >= 80 ? "var(--success)" : "var(--danger)" }}>{rate}% present</div>}</div>;
+          })}
+        </div>
       </div>
     </div>
   );

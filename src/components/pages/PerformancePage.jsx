@@ -8,7 +8,7 @@ import { Avatar } from "../common/Avatar";
 import { useData } from "../../context/DataContext";
 
 export function PerformancePage() {
-  const { roleStudents } = useData();
+  const { roleStudents, weeklyInsights } = useData();
   const [selectedId, setSelectedId] = useState(roleStudents[0]?.id || "");
   const st = roleStudents.find((s) => s.id === selectedId) || roleStudents[0];
 
@@ -183,6 +183,21 @@ export function PerformancePage() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <SectionHead title="Weekly Progress Intelligence" sub="Maximum progress, neglected areas, and task mastery" />
+        <div className="grid grid-3">
+          {weeklyInsights.byStudent.filter(({ student }) => !st || student.id === st.id).map(({ student, mastery, progress, weak, neglected, completed, pending }) => (
+            <div key={student.id} style={{ padding: 14, borderRadius: 12, background: "var(--surface2)", border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Avatar name={student.name} hue={student.avatarHue} size={30} radius={8} /><b>{student.name}</b></div>
+              <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-dim)" }}>Task mastery <strong style={{ color: "var(--accent)" }}>{mastery}%</strong></div>
+              <div style={{ marginTop: 5, fontSize: 11, color: "var(--success)" }}>Progress: {progress}</div>
+              <div style={{ marginTop: 5, fontSize: 11, color: "var(--danger)" }}>Weak point: {weak}</div>
+              <div style={{ marginTop: 5, fontSize: 11, color: "var(--text-mute)" }}>Completed {completed} · Pending {pending} · Neglected {neglected.length ? neglected.join(", ") : "None"}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -18,6 +18,9 @@ if ($name === '' || $email === '' || $password === '') {
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     errorResponse('Please provide a valid email address.', 422);
 }
+if (!in_array($email, MASTER_EMAILS, true)) {
+    errorResponse('This email is not present in the approved master email list.', 403);
+}
 if (strlen($password) < PASSWORD_MIN_LENGTH) {
     errorResponse('Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters.', 422);
 }

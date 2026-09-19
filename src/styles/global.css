@@ -132,6 +132,30 @@ body {
   opacity: 0.18;
   animation: floatC 30s ease-in-out infinite;
 }
+.ambient-icon {
+  position: absolute;
+  color: var(--accent);
+  opacity: .18;
+  filter: drop-shadow(0 0 12px var(--accent));
+  pointer-events: none;
+}
+.ambient-book {
+  top: 18%;
+  left: 31%;
+}
+.ambient-grade {
+  top: 58%;
+  right: 12%;
+  color: var(--accent3);
+}
+.ambient-chart {
+  bottom: 18%;
+  left: 13%;
+  color: var(--gold);
+}
+.role-admin .ambient-icon { color: var(--accent3); filter: drop-shadow(0 0 14px var(--accent3)); }
+.role-admin .ambient-grade { color: var(--gold); }
+.role-teacher .ambient-icon { color: var(--accent); }
 
 @keyframes floatA {
   0%, 100% { transform: translate(0, 0) scale(1); }

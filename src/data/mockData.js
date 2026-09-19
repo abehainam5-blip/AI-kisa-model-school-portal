@@ -72,6 +72,7 @@ export const INITIAL_TEACHERS = [
   { id: 3, name: "Mrs. Sana Iqbal", subject: "Mathematics", classes: [3, 4, 5], rating: 4.9, status: "Active", email: "sana.iqbal@aikisa.edu.pk" },
   { id: 4, name: "Mr. Danish Farooq", subject: "Social Studies", classes: [1, 2], rating: 4.5, status: "On Leave", email: "danish.farooq@aikisa.edu.pk" },
   { id: 5, name: "Ms. Iqra Malik", subject: "Islamiat & Urdu", classes: [10], rating: 4.7, status: "Active", email: "iqra.malik@aikisa.edu.pk" },
+  { id: 6, name: "Ms. Nauzhat Fatima", subject: "General Faculty", classes: [], rating: 5.0, status: "Active", email: "nauzhatfatima017@gmail.com" },
 ];
 
 export const MONTHLY_TREND = MONTHS.slice(0, 9).map((m, i) => ({

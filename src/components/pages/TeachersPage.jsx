@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Plus, Star } from "lucide-react";
+import { Plus, Star, Circle, Trophy, AlertTriangle, Check } from "lucide-react";
 import { PageHead } from "../common/PageHead";
 import { Avatar } from "../common/Avatar";
 import { AddTeacherModal } from "../modals/AddTeacherModal";
 import { useData } from "../../context/DataContext";
 
 export function TeachersPage() {
-  const { teachers, students } = useData();
+  const { teachers, students, teacherAnalytics, activeSessions } = useData();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   return (
@@ -48,7 +48,7 @@ export function TeachersPage() {
 
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 10 }}>
                 <span style={{ color: "var(--text-mute)" }}>Assigned Classes</span>
-                <span style={{ fontWeight: 700 }}>{t.classes.map((c) => `Class ${c}`).join(", ")}</span>
+                <span style={{ fontWeight: 700 }}>{t.classes.length ? t.classes.map((c) => `Class ${c}`).join(", ") : "Unassigned"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 14 }}>
@@ -75,6 +75,22 @@ export function TeachersPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div><h3 className="section-title">Live Teacher Monitoring</h3><p className="section-sub" style={{ marginBottom: 0 }}>Active portal sessions and weekly class analytics</p></div>
+          <span className="badge badge-green"><Circle size={8} fill="currentColor" /> {Object.keys(activeSessions).length} active session(s)</span>
+        </div>
+        <div className="scroll-x">
+          <table className="data-table">
+            <thead><tr><th>Teacher</th><th>Session</th><th>Top Student</th><th>Weakest Student</th><th>Weekly Tasks</th></tr></thead>
+            <tbody>{teacherAnalytics.map(({ teacher, top, weakest, totalTasks, completedTasks, missedTasks }) => {
+              const online = activeSessions[teacher.email];
+              return <tr key={teacher.id}><td><b>{teacher.name}</b><div style={{ fontSize: 11, color: "var(--text-mute)" }}>{teacher.email}</div></td><td>{online ? <span className="badge badge-green"><Check size={11} /> Online</span> : <span className="badge badge-gray">Offline</span>}</td><td>{top ? <span><Trophy size={12} color="var(--gold)" /> {top.name} ({top.performance}%)</span> : "—"}</td><td>{weakest ? <span><AlertTriangle size={12} color="var(--danger)" /> {weakest.name} ({weakest.performance}%)</span> : "—"}</td><td>{totalTasks} assigned · <span style={{ color: "var(--success)" }}>{completedTasks} done</span> · <span style={{ color: "var(--danger)" }}>{missedTasks} missed</span></td></tr>;
+            })}</tbody>
+          </table>
+        </div>
       </div>
 
       <AddTeacherModal
