@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { ChevronRight, Sparkles, AlertCircle, CheckCircle, Lock } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronRight, Sparkles } from "lucide-react";
 import { LOGO_SRC } from "../../constants/logo";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { checkBackendHealth } from "../../api/auth";
 
 // LOCKDOWN MODE (isolated testing): only ONE account is active.
 const LOCKDOWN_EMAIL = "rizvitabssum123@gmail.com";
@@ -16,26 +15,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [backendOnline, setBackendOnline] = useState(null);
-  const [checkingHealth, setCheckingHealth] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setCheckingHealth(true);
-    checkBackendHealth()
-      .then((result) => {
-        if (mounted) setBackendOnline(result.online);
-      })
-      .catch(() => {
-        if (mounted) setBackendOnline(false);
-      })
-      .finally(() => {
-        if (mounted) setCheckingHealth(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -65,9 +44,6 @@ export function LoginPage() {
     } catch (loginError) {
       const message = loginError.message || "Unable to sign in.";
       setError(message);
-      if (message.toLowerCase().includes("unavailable") || message.toLowerCase().includes("fallback")) {
-        showToast("Backend unreachable — using local fallback authentication.", "info");
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -87,56 +63,6 @@ export function LoginPage() {
         </div>
         <div className="login-title">AI KISA Model School</div>
         <div className="login-sub">Sign in to the AI Teacher Management System</div>
-
-        {/* Lockdown banner */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 12px",
-            borderRadius: 8,
-            background: "rgba(245,158,11,0.12)",
-            color: "var(--gold)",
-            fontSize: 11.5,
-            marginBottom: 14,
-            border: "1px solid rgba(245,158,11,0.25)",
-          }}
-        >
-          <Lock size={14} /> Isolated testing mode — only the designated teacher account is active.
-        </div>
-
-        {/* Backend status indicator */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 12px",
-            borderRadius: 8,
-            background: backendOnline
-              ? "rgba(34,197,94,0.12)"
-              : "rgba(245,158,11,0.12)",
-            color: backendOnline ? "var(--success)" : "var(--gold)",
-            fontSize: 11.5,
-            marginBottom: 14,
-            border: `1px solid ${backendOnline ? "rgba(34,197,94,0.25)" : "rgba(245,158,11,0.25)"}`,
-          }}
-        >
-          {checkingHealth ? (
-            <>
-              <AlertCircle size={14} /> Checking backend connection…
-            </>
-          ) : backendOnline ? (
-            <>
-              <CheckCircle size={14} /> Backend connected — live authentication active.
-            </>
-          ) : (
-            <>
-              <AlertCircle size={14} /> Backend offline — fallback authentication enabled.
-            </>
-          )}
-        </div>
 
         {error && (
           <div
