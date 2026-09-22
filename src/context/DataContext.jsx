@@ -27,6 +27,12 @@ const startOfWeek = (date = new Date()) => {
   return value;
 };
 
+function generateStudentId(classNumber, existingCount) {
+  const year = new Date().getFullYear();
+  const seq = String(existingCount + 1).padStart(3, "0");
+  return `KISA-${year}-${classNumber}-${seq}`;
+}
+
 export function DataProvider({ children }) {
   const { currentUser, role, token } = useAuth();
   const { showToast } = useToast();
@@ -64,6 +70,17 @@ export function DataProvider({ children }) {
   const [activeSessions, setActiveSessions] = useState(() => ({
     [currentUser?.email || "teacher@aikisa.edu.pk"]: { name: currentUser?.name || "Current user", role, lastSeen: Date.now() }
   }));
+  const [substituteMode, setSubstituteMode] = useState(false);
+  const [proxyTeacherId, setProxyTeacherId] = useState(null);
+
+  const substituteOptions = useMemo(() => (
+    teachers.filter((teacher) => teacher.status !== "On Leave" && teacher.email !== currentUser?.email)
+  ), [teachers, currentUser]);
+
+  const activeProxyTeacher = useMemo(() => {
+    if (!substituteMode || !proxyTeacherId) return null;
+    return teachers.find((teacher) => Number(teacher.id) === Number(proxyTeacherId)) || null;
+  }, [substituteMode, proxyTeacherId, teachers]);
 
   useEffect(() => {
     if (!currentUser?.email) return;
@@ -110,17 +127,24 @@ export function DataProvider({ children }) {
   // Filter students based on active role
   const roleStudents = useMemo(() => {
     if (role === "teacher") {
-      const assignedClasses = currentUser?.classes?.length ? currentUser.classes : [8, 9];
+      const targetTeacher = activeProxyTeacher || {
+        classes: currentUser?.classes?.length ? currentUser.classes : [8, 9],
+      };
+      const assignedClasses = targetTeacher.classes?.length ? targetTeacher.classes : [8, 9];
       return students.filter((s) => assignedClasses.includes(s.class));
     }
     return students;
-  }, [students, role, currentUser]);
+  }, [students, role, currentUser, activeProxyTeacher]);
 
   // Log an audit action
   const logAudit = (action, target) => {
+    const actorName = substituteMode && activeProxyTeacher
+      ? `${currentUser?.name || "Covering Teacher"} (covering ${activeProxyTeacher.name})`
+      : currentUser?.name || "System";
+
     const newLog = {
       id: Date.now(),
-      actor: currentUser?.name || "System",
+      actor: actorName,
       action,
       target,
       time: "Just now"
@@ -148,14 +172,16 @@ export function DataProvider({ children }) {
       throw new Error("A student with this email already exists.");
     }
     const id = Date.now();
+    const generatedStudentId = studentData.studentId || generateStudentId(Number(studentData.class), students.length);
     const localStudent = {
-      id, name: studentData.name, class: Number(studentData.class),
+      id, studentId: generatedStudentId, name: studentData.name, class: Number(studentData.class),
       attendance: Number(studentData.attendance) || 85,
       performance: Number(studentData.performance) || 75, tasksCompleted: 0,
       strengths: studentData.strengths && studentData.strengths.length ? studentData.strengths : STRENGTH_POOL[0],
       weakPoints: studentData.weakPoints && studentData.weakPoints.length ? studentData.weakPoints : WEAK_POOL[0],
       avatarHue: (id * 47) % 360, present: true,
       gender: studentData.gender || "Not Specified",
+      socialMedia: studentData.socialMedia || "",
       email: studentData.email || `${studentData.name.toLowerCase().replace(/\s+/g, ".")}@aikisa.edu.pk`,
     };
     if (!token) throw new Error("You must be signed in to create student records.");
@@ -258,6 +284,10 @@ export function DataProvider({ children }) {
     const taskDef = TASK_TYPES.find((t) => t.key === taskKey);
     if (!student || !taskDef) throw new Error("Please select a valid student and task.");
 
+    const sourceTeacherLabel = substituteMode && activeProxyTeacher
+      ? `${currentUser?.name || "Covering teacher"} covering ${activeProxyTeacher.name}`
+      : currentUser?.name || "Teacher";
+
     const newLogItem = {
       id: Date.now(),
       studentId,
@@ -265,7 +295,8 @@ export function DataProvider({ children }) {
       task: taskDef.label + (customNote ? ` (${customNote})` : ""),
       time: "Just now",
       date: dateKey(selectedDate),
-      status: "done"
+      status: "done",
+      actor: sourceTeacherLabel,
     };
 
     setTasksLog((prev) => [newLogItem, ...prev]);
@@ -485,6 +516,12 @@ export function DataProvider({ children }) {
         dailyInsights,
         teacherAnalytics,
         activeSessions,
+        substituteMode,
+        setSubstituteMode,
+        proxyTeacherId,
+        setProxyTeacherId,
+        substituteOptions,
+        activeProxyTeacher,
         globalSearch,
         setGlobalSearch,
         addStudent,

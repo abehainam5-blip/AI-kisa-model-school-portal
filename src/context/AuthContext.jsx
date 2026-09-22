@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { loginWithEmail } from "../api/auth";
 import { TEACHER_NAME, TEACHER_CLASSES } from "../constants/navigation";
 
 const AuthContext = createContext();
@@ -6,7 +7,8 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem("ai-kisa-session") || "null");
+      const savedSession = JSON.parse(sessionStorage.getItem("ai-kisa-session") || "null");
+      return savedSession || null;
     } catch {
       return null;
     }
@@ -19,32 +21,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const normalizedEmail = email.trim().toLowerCase();
-    try {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 2500);
-      const response = await fetch("/backend/api/login.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: normalizedEmail, password }),
-        signal: controller.signal
-      });
-      window.clearTimeout(timeoutId);
-      const payload = await response.json().catch(() => ({}));
-      if (response.ok && payload.success) {
-        setSession(payload.data);
-        return payload.data.user;
-      }
-      if (response.status !== 500 && response.status !== 502 && response.status !== 503) {
-        throw new Error(payload.error || "Invalid email or password.");
-      }
-    } catch (error) {
-      if (error.message === "Invalid email or password." || error.message === "Email and password are required.") {
-        throw error;
-      }
-    }
-
-    throw new Error("Login API unavailable. Start PHP/PostgreSQL and try again.");
+    const responseData = await loginWithEmail(normalizedEmail, password);
+    setSession(responseData);
+    return responseData.user;
   };
 
   const logout = () => {

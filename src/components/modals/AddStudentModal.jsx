@@ -1,10 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Modal } from "../common/Modal";
 import { useData } from "../../context/DataContext";
 import { CLASS_NUMS } from "../../constants/navigation";
 
+const SOCIAL_MEDIA_REGEX = /(https?:\/\/)?(www\.)?(linkedin\.com|instagram\.com|facebook\.com|twitter\.com|x\.com)\/[A-Za-z0-9_\-\.\/]+/i;
+
+function isValidSocialMediaUrl(url) {
+  if (!url || !url.trim()) return false;
+  const value = url.trim();
+  // Accept bare profile names too, e.g. "instagram.com/username"
+  return SOCIAL_MEDIA_REGEX.test(value) || /^(linkedin\.com|instagram\.com|facebook\.com|twitter\.com|x\.com)\/[A-Za-z0-9_\-\.\/]+$/i.test(value);
+}
+
+function generateStudentId(classNumber, existingCount) {
+  const year = new Date().getFullYear();
+  const seq = String(existingCount + 1).padStart(3, "0");
+  return `KISA-${year}-${classNumber}-${seq}`;
+}
+
 export function AddStudentModal({ isOpen, onClose }) {
-  const { addStudent, saving } = useData();
+  const { addStudent, students, saving } = useData();
   const [name, setName] = useState("");
   const [cls, setCls] = useState("8");
   const [gender, setGender] = useState("Male");
@@ -12,8 +27,15 @@ export function AddStudentModal({ isOpen, onClose }) {
   const [performance, setPerformance] = useState("75");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [socialMedia, setSocialMedia] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [error, setError] = useState("");
   const isSubmitting = saving.students;
+
+  const nextId = useMemo(
+    () => generateStudentId(Number(cls), students.length),
+    [cls, students.length]
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,8 +51,24 @@ export function AddStudentModal({ isOpen, onClose }) {
       setError("Password must be at least 8 characters.");
       return;
     }
+    if (!isValidSocialMediaUrl(socialMedia)) {
+      setError("A valid Social Media Link / Profile URL (LinkedIn, Instagram, or Facebook) is required.");
+      return;
+    }
     try {
-      await addStudent({ name: name.trim(), class: cls, gender, attendance, performance, email: email.trim(), password });
+      const generatedId = nextId;
+      setStudentId(generatedId);
+      await addStudent({
+        name: name.trim(),
+        class: cls,
+        gender,
+        attendance,
+        performance,
+        email: email.trim(),
+        password,
+        socialMedia: socialMedia.trim(),
+        studentId: generatedId,
+      });
     } catch (submitError) {
       setError(submitError.message || "Unable to save this student.");
       return;
@@ -43,6 +81,8 @@ export function AddStudentModal({ isOpen, onClose }) {
     setPerformance("75");
     setEmail("");
     setPassword("");
+    setSocialMedia("");
+    setStudentId("");
     setError("");
     onClose();
   };
@@ -134,6 +174,29 @@ export function AddStudentModal({ isOpen, onClose }) {
               onChange={(e) => setPerformance(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="field-group" style={{ marginBottom: 15 }}>
+          <label className="field-label">Social Media Link / Profile URL *</label>
+          <input
+            className="field-input"
+            placeholder="e.g. linkedin.com/in/username or instagram.com/username"
+            value={socialMedia}
+            onChange={(e) => { setSocialMedia(e.target.value); setError(""); }}
+          />
+          <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 4 }}>
+            Required: LinkedIn, Instagram, or Facebook profile link.
+          </div>
+        </div>
+
+        <div className="field-group">
+          <label className="field-label">Generated Student ID</label>
+          <input
+            className="field-input"
+            value={nextId}
+            readOnly
+            style={{ opacity: 0.85, cursor: "default" }}
+          />
         </div>
 
       </form>

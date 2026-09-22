@@ -23,7 +23,17 @@ import { adminStagger, teacherStagger, useMotionConfig } from "../common/Motion"
 
 export function DashboardPage({ setPage }) {
   const { role } = useAuth();
-  const { roleStudents, reports, tasksLog } = useData();
+  const {
+    roleStudents,
+    reports,
+    tasksLog,
+    substituteMode,
+    setSubstituteMode,
+    substituteOptions,
+    proxyTeacherId,
+    setProxyTeacherId,
+    activeProxyTeacher,
+  } = useData();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -57,6 +67,37 @@ export function DashboardPage({ setPage }) {
             : "A real-time snapshot across every class, teacher and report."
         }
       >
+        {isTeacher && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+              <input
+                type="checkbox"
+                checked={substituteMode}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setSubstituteMode(checked);
+                  if (!checked) setProxyTeacherId(null);
+                }}
+              />
+              Substitute mode
+            </label>
+            {substituteMode && (
+              <select
+                className="field-input"
+                value={proxyTeacherId || ""}
+                onChange={(event) => setProxyTeacherId(event.target.value || null)}
+                style={{ minWidth: 200, padding: "6px 10px", fontSize: 12 }}
+              >
+                <option value="">Select teacher coverage</option>
+                {substituteOptions.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name} · Class {teacher.classes?.join(", ") || "N/A"}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => setPage("calendar")}
@@ -64,7 +105,7 @@ export function DashboardPage({ setPage }) {
         >
           <CalendarIcon size={14} /> Today
         </button>
-          <motion.button
+        <motion.button
           className="btn btn-primary btn-sm"
           onClick={() => {
             if (isTeacher) setIsTaskModalOpen(true);
@@ -76,8 +117,15 @@ export function DashboardPage({ setPage }) {
           transition={!isTeacher && !shouldReduceMotion ? { duration: 2.4, repeat: Infinity } : undefined}
         >
           <Plus size={14} /> {isTeacher ? "Log Task" : "New Announcement"}
-          </motion.button>
+        </motion.button>
       </PageHead>
+
+      {isTeacher && substituteMode && activeProxyTeacher && (
+        <div className="card" style={{ marginBottom: 18, padding: "12px 16px" }}>
+          <strong>Substitute teacher mode:</strong> covering <span style={{ color: "var(--accent)" }}>{activeProxyTeacher.name}</span>
+          <span style={{ color: "var(--text-mute)", marginLeft: 8 }}>Classes: {activeProxyTeacher.classes?.join(", ") || "N/A"}</span>
+        </div>
+      )}
 
       {/* 4 Stat KPI Cards */}
       <motion.div

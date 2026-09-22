@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS attendance_records (
     CONSTRAINT attendance_records_unique_day UNIQUE (student_id, attendance_date)
 );
 
--- Remove every previous local/testing account before installing the allowlist.
+-- LOCKDOWN MODE (isolated testing):
+-- Only ONE account is permitted during testing. To restore the full
+-- multi-admin/multi-teacher allowlist, edit the CHECK constraint below
+-- and re-run backend/seed_users.php with LOCKDOWN_MODE = false.
 DELETE FROM users;
 
 ALTER TABLE users
@@ -33,30 +36,13 @@ ALTER TABLE users
 
 ALTER TABLE users
     ADD CONSTRAINT users_master_email_check CHECK (
-        LOWER(email) IN (
-            's.wasif404@gmail.com',
-            'kisamodel.school@gmail.com',
-            'itsfatima25@gmail.com',
-            'ashbafatima017@gmail.com',
-            'batoolsakina7607@gmail.com',
-            'rizvitabssum123@gmail.com',
-            'ghaziaznb@gmail.com',
-            'nauzhatfatima017@gmail.com'
-        )
+        LOWER(email) = 'rizvitabssum123@gmail.com'
     );
 
--- Bootstrap rows use unique, cryptographically random hashes. Run
--- backend/seed_users.php immediately after this migration to replace them
--- with PHP password_hash() values and print the one-time credentials.
+-- Bootstrap row uses a random hash; run backend/seed_users.php immediately
+-- after this migration to replace it with the lockdown password hash.
 INSERT INTO users (name, email, password, role)
 VALUES
-    ('S. Wasif', 'S.wasif404@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'admin'),
-    ('Kisa Model School', 'kisamodel.school@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'admin'),
-    ('Fatima', 'itsfatima25@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher'),
-    ('Ashba Fatima', 'ashbafatima017@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher'),
-    ('Batool Sakina', 'batoolsakina7607@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher'),
-    ('Rizvi Tabssum', 'rizvitabssum123@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher'),
-    ('Ghazia', 'ghaziaznb@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher'),
-    ('Nauzhat Fatima', 'nauzhatfatima017@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher');
+    ('Rizvi Tabssum', 'rizvitabssum123@gmail.com', crypt(encode(gen_random_bytes(32), 'hex'), gen_salt('bf')), 'teacher');
 
 COMMIT;
