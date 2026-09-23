@@ -159,7 +159,8 @@ export function DataProvider({ children }) {
     try {
       return await mutation();
     } catch (error) {
-      showToast(error.message || "The change could not be saved.", "error");
+      const errorMessage = error?.message || error?.data || error?.toString() || String(error) || "The change could not be saved.";
+      showToast(errorMessage, "error");
       throw error;
     } finally {
       setSaving((prev) => ({ ...prev, [key]: false }));
@@ -199,7 +200,8 @@ export function DataProvider({ children }) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.success) {
-      throw new Error(payload.error || "Unable to create the student record.");
+      const apiError = payload.error || payload.message || payload.data || "Unable to create the student record.";
+      throw new Error(typeof apiError === 'object' ? JSON.stringify(apiError) : apiError);
     }
     const persisted = payload.data?.student || {};
     const newStudent = {
