@@ -2,7 +2,7 @@ import React from "react";
 import { Modal } from "../common/Modal";
 import { Avatar } from "../common/Avatar";
 import { ProgressBar } from "../common/ProgressBar";
-import { Check, X, Star, Mail, Calendar, Award } from "lucide-react";
+import { Check, X, Star, Mail, Calendar, Award, Share2, ExternalLink } from "lucide-react";
 import { useData } from "../../context/DataContext";
 import { CertificateButton } from "../common/CertificateButton";
 
@@ -23,6 +23,25 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
       : "D";
   const weekly = weeklyInsights.byStudent.find((item) => item.student.id === student.id);
 
+  const shareProfileLink = () => {
+    const profileUrl = `${window.location.origin}/student/${student.studentId || student.id}`;
+    navigator.clipboard.writeText(profileUrl).then(() => {
+      alert("Profile link copied to clipboard!");
+    }).catch(() => {
+      alert("Failed to copy link. Please copy manually: " + profileUrl);
+    });
+  };
+
+  const openSocialMedia = () => {
+    if (student.socialMedia) {
+      let url = student.socialMedia;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -30,9 +49,19 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
       title="Student Profile & Academic Details"
       size="lg"
       footer={
-        <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
-          Close Details
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={shareProfileLink} title="Copy shareable profile link">
+            <Share2 size={14} /> Copy Profile Link
+          </button>
+          {student.socialMedia && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={openSocialMedia} title="Open social media profile">
+              <ExternalLink size={14} /> Social Media
+            </button>
+          )}
+          <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
+            Close Details
+          </button>
+        </div>
       }
     >
       <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
@@ -134,6 +163,20 @@ export function StudentDetailsModal({ student, isOpen, onClose }) {
             <Mail size={14} color="var(--accent)" />
             <span>{student.email || `${student.name.toLowerCase().replace(/\s+/g, ".")}@aikisa.edu.pk`}</span>
           </div>
+          {student.socialMedia && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <ExternalLink size={14} color="var(--accent3)" />
+              <a 
+                href={student.socialMedia.startsWith('http') ? student.socialMedia : `https://${student.socialMedia}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--accent3)", textDecoration: "none" }}
+                onClick={(e) => { e.preventDefault(); openSocialMedia(); }}
+              >
+                {student.socialMedia}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </Modal>
