@@ -22,7 +22,8 @@ export function NewReportModal({ isOpen, onClose }) {
     try {
       await submitReport({ title: title.trim(), class: cls, category, content: content.trim() });
     } catch (submitError) {
-      setError(submitError.message || "Unable to submit this report.");
+      const errorMessage = submitError?.message || submitError?.toString() || "Unable to submit this report.";
+      setError(errorMessage);
       return;
     }
 

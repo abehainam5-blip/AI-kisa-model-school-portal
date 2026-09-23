@@ -45,7 +45,8 @@ export function AddTeacherModal({ isOpen, onClose }) {
     try {
       await addTeacher({ name: name.trim(), subject: subject.trim(), classes: selectedClasses, email: email.trim(), password });
     } catch (submitError) {
-      setError(submitError.message || "Unable to save this teacher.");
+      const errorMessage = submitError?.message || submitError?.toString() || "Unable to save this teacher.";
+      setError(errorMessage);
       return;
     }
 

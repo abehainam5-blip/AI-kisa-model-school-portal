@@ -23,7 +23,8 @@ export function AddEventModal({ isOpen, onClose, defaultDay = 15 }) {
     try {
       await addCalendarEvent(d, title.trim());
     } catch (submitError) {
-      setError(submitError.message || "Unable to save this event.");
+      const errorMessage = submitError?.message || submitError?.toString() || "Unable to save this event.";
+      setError(errorMessage);
       return;
     }
     setTitle("");

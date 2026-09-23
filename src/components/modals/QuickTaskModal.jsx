@@ -17,7 +17,8 @@ export function QuickTaskModal({ isOpen, onClose }) {
     try {
       await assignTask(Number(selectedStudent), selectedTask, note.trim());
     } catch (submitError) {
-      setError(submitError.message || "Unable to save this activity.");
+      const errorMessage = submitError?.message || submitError?.toString() || "Unable to save this activity.";
+      setError(errorMessage);
       return;
     }
     setNote("");
