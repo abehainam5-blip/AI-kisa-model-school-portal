@@ -15,7 +15,8 @@ function isValidSocialMediaUrl(url) {
 function generateStudentId(classNumber, existingCount) {
   const year = new Date().getFullYear();
   const seq = String(existingCount + 1).padStart(3, "0");
-  return `KISA-${year}-${classNumber}-${seq}`;
+  const classCode = typeof classNumber === 'string' ? classNumber.toUpperCase().substring(0, 3) : classNumber;
+  return `KISA-${year}-${classCode}-${seq}`;
 }
 
 export function AddStudentModal({ isOpen, onClose }) {
@@ -118,7 +119,7 @@ export function AddStudentModal({ isOpen, onClose }) {
             <label className="field-label">Class</label>
             <select className="field-input" value={cls} onChange={(e) => setCls(e.target.value)}>
               {CLASS_NUMS.map((c) => (
-                <option key={c} value={c}>Class {c}</option>
+                <option key={c} value={c}>{typeof c === 'string' ? c : `Class ${c}`}</option>
               ))}
             </select>
           </div>

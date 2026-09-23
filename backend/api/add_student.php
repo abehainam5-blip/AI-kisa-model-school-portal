@@ -12,7 +12,7 @@ $body = getRequestBody();
 $name = trim((string) ($body['name'] ?? ''));
 $email = strtolower(trim((string) ($body['email'] ?? '')));
 $password = (string) ($body['password'] ?? '');
-$classNumber = (int) ($body['class'] ?? 0);
+$classValue = $body['class'] ?? '';
 $gender = trim((string) ($body['gender'] ?? 'Not Specified'));
 $attendance = (int) ($body['attendance'] ?? 85);
 $performance = (int) ($body['performance'] ?? 75);
@@ -25,8 +25,11 @@ if ($name === '') {
 if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     errorResponse('Please provide a valid email address if provided.', 422);
 }
-if ($classNumber < 1 || $classNumber > 10 || $attendance < 0 || $attendance > 100 || $performance < 0 || $performance > 100) {
-    errorResponse('Class, attendance, and performance values are invalid.', 422);
+if ($classValue === '') {
+    errorResponse('Class is required.', 422);
+}
+if ($attendance < 0 || $attendance > 100 || $performance < 0 || $performance > 100) {
+    errorResponse('Attendance and performance values are invalid.', 422);
 }
 // Social media is now optional - no validation required
 
@@ -42,9 +45,10 @@ try {
     if ($studentId === '') {
         $year = (int) date('Y');
         $seqStmt = $pdo->prepare('SELECT COUNT(*) FROM students WHERE class_number = :cls');
-        $seqStmt->execute(['cls' => $classNumber]);
+        $seqStmt->execute(['cls' => $classValue]);
         $seq = (int) $seqStmt->fetchColumn() + 1;
-        $studentId = sprintf('KISA-%d-%d-%03d', $year, $classNumber, $seq);
+        $classCode = is_numeric($classValue) ? $classValue : strtoupper(substr($classValue, 0, 3));
+        $studentId = sprintf('KISA-%d-%s-%03d', $year, $classCode, $seq);
     }
 
     $insert = $pdo->prepare(
@@ -55,7 +59,7 @@ try {
     $insert->execute([
         $name,
         $email,
-        $classNumber,
+        $classValue,
         $gender ?: 'Not Specified',
         $attendance,
         $performance,

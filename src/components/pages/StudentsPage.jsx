@@ -28,7 +28,13 @@ export function StudentsPage() {
   const [studentToDelete, setStudentToDelete] = useState(null);
 
   const classes = useMemo(() => {
-    return Array.from(new Set(roleStudents.map((s) => s.class))).sort((a, b) => a - b);
+    return Array.from(new Set(roleStudents.map((s) => s.class))).sort((a, b) => {
+      // Sort Nursery first, then KG, then numeric classes
+      const order = { 'Nursery': 0, 'KG': 1 };
+      const aOrder = order[a] ?? (typeof a === 'number' ? a + 2 : 100);
+      const bOrder = order[b] ?? (typeof b === 'number' ? b + 2 : 100);
+      return aOrder - bOrder;
+    });
   }, [roleStudents]);
 
   const effectiveQuery = globalSearch || localQuery;
@@ -37,7 +43,7 @@ export function StudentsPage() {
     return roleStudents
       .filter((s) => {
         const matchesQuery = s.name.toLowerCase().includes(effectiveQuery.toLowerCase());
-        const matchesClass = classFilter === "all" || s.class === Number(classFilter);
+        const matchesClass = classFilter === "all" || s.class === classFilter || s.class === Number(classFilter);
         const isPresent = attendance[s.id] !== false;
         const matchesStatus =
           statusFilter === "all" ||
@@ -106,7 +112,7 @@ export function StudentsPage() {
           >
             <option value="all">All Classes</option>
             {classes.map((c) => (
-              <option key={c} value={c}>Class {c}</option>
+              <option key={c} value={c}>{typeof c === 'string' ? c : `Class ${c}`}</option>
             ))}
           </select>
 
@@ -200,7 +206,7 @@ export function StudentsPage() {
                           </div>
                         </div>
                       </td>
-                      <td>Class {s.class}</td>
+                      <td>{typeof s.class === 'string' ? s.class : `Class ${s.class}`}</td>
                       <td style={{ minWidth: 120 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 64 }}>

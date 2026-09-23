@@ -174,9 +174,9 @@ export function DataProvider({ children }) {
       throw new Error("A student with this email already exists.");
     }
     const id = Date.now();
-    const generatedStudentId = studentData.studentId || generateStudentId(Number(studentData.class), students.length);
+    const generatedStudentId = studentData.studentId || generateStudentId(studentData.class, students.length);
     const localStudent = {
-      id, studentId: generatedStudentId, name: studentData.name, class: Number(studentData.class),
+      id, studentId: generatedStudentId, name: studentData.name, class: studentData.class,
       attendance: 85,
       performance: 75, tasksCompleted: 0,
       strengths: studentData.strengths && studentData.strengths.length ? studentData.strengths : STRENGTH_POOL[0],
@@ -211,7 +211,7 @@ export function DataProvider({ children }) {
           newStudent = {
             ...localStudent,
             ...persisted,
-            class: Number(persisted.class_number || localStudent.class),
+            class: persisted.class_number || localStudent.class,
             attendance: Number(persisted.attendance ?? localStudent.attendance),
             performance: Number(persisted.performance ?? localStudent.performance)
           };

@@ -14,12 +14,18 @@ export function AttendancePage() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
   const classes = useMemo(() => {
-    return Array.from(new Set(roleStudents.map((s) => s.class))).sort((a, b) => a - b);
+    return Array.from(new Set(roleStudents.map((s) => s.class))).sort((a, b) => {
+      // Sort Nursery first, then KG, then numeric classes
+      const order = { 'Nursery': 0, 'KG': 1 };
+      const aOrder = order[a] ?? (typeof a === 'number' ? a + 2 : 100);
+      const bOrder = order[b] ?? (typeof b === 'number' ? b + 2 : 100);
+      return aOrder - bOrder;
+    });
   }, [roleStudents]);
 
   const filteredStudents = useMemo(() => {
     if (selectedClass === "all") return roleStudents;
-    return roleStudents.filter((s) => s.class === Number(selectedClass));
+    return roleStudents.filter((s) => s.class === selectedClass || s.class === Number(selectedClass));
   }, [roleStudents, selectedClass]);
 
   const presentCount = filteredStudents.filter((s) => attendance[s.id] !== false).length;
@@ -84,7 +90,7 @@ export function AttendancePage() {
             >
               <option value="all">All Classes</option>
               {classes.map((c) => (
-                <option key={c} value={c}>Class {c}</option>
+                <option key={c} value={c}>{typeof c === 'string' ? c : `Class ${c}`}</option>
               ))}
             </select>
           </div>
@@ -136,7 +142,7 @@ export function AttendancePage() {
                           <b style={{ fontSize: 12.5 }}>{s.name}</b>
                         </div>
                       </td>
-                      <td>Class {s.class}</td>
+                      <td>{typeof s.class === 'string' ? s.class : `Class ${s.class}`}</td>
                       <td>#{s.id}</td>
                       <td>
                         {isPresent ? (

@@ -40,7 +40,7 @@ export const ADMIN_NAV = [
   { key: "profile", label: "Profile", icon: User },
 ];
 
-export const CLASS_NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+export const CLASS_NUMS = ["Nursery", "KG", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const TEACHER_NAME = "Ms. Areeba Nadeem";
 export const TEACHER_CLASSES = [8, 9];
