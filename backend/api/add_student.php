@@ -19,8 +19,11 @@ $performance = (int) ($body['performance'] ?? 75);
 $socialMedia = trim((string) ($body['social_media'] ?? ''));
 $studentId = trim((string) ($body['student_id'] ?? ''));
 
-if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    errorResponse('Name and valid email are required.', 422);
+if ($name === '') {
+    errorResponse('Name is required.', 422);
+}
+if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    errorResponse('Please provide a valid email address if provided.', 422);
 }
 if ($classNumber < 1 || $classNumber > 10 || $attendance < 0 || $attendance > 100 || $performance < 0 || $performance > 100) {
     errorResponse('Class, attendance, and performance values are invalid.', 422);
@@ -29,9 +32,12 @@ if ($classNumber < 1 || $classNumber > 10 || $attendance < 0 || $attendance > 10
 
 try {
     $pdo = getDBConnection();
-    $check = $pdo->prepare('SELECT id FROM students WHERE LOWER(email) = LOWER(?) LIMIT 1');
-    $check->execute([$email]);
-    if ($check->fetch()) errorResponse('A student with this email already exists.', 409);
+    // Only check email uniqueness if email is provided
+    if ($email !== '') {
+        $check = $pdo->prepare('SELECT id FROM students WHERE LOWER(email) = LOWER(?) LIMIT 1');
+        $check->execute([$email]);
+        if ($check->fetch()) errorResponse('A student with this email already exists.', 409);
+    }
 
     if ($studentId === '') {
         $year = (int) date('Y');

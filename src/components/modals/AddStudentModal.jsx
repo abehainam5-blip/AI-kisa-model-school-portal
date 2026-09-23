@@ -40,8 +40,8 @@ export function AddStudentModal({ isOpen, onClose }) {
       setError("Please enter the student's full name.");
       return;
     }
-    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setError("Please enter a valid unique email address.");
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("Please enter a valid email address if provided.");
       return;
     }
     if (socialMedia && !isValidSocialMediaUrl(socialMedia)) {
@@ -111,7 +111,7 @@ export function AddStudentModal({ isOpen, onClose }) {
 
         <div className="grid grid-2" style={{ marginBottom: 15 }}>
           <div>
-            <label className="field-label">Student Email *</label>
+            <label className="field-label">Student Email (Optional)</label>
             <input type="email" className="field-input" placeholder="student@aikisa.edu.pk" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
           </div>
           <div>

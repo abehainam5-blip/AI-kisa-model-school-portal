@@ -169,7 +169,8 @@ export function DataProvider({ children }) {
 
   // Student Actions
   const addStudent = (studentData) => runMutation("students", async () => {
-    if (students.some((student) => student.email?.toLowerCase() === studentData.email?.toLowerCase())) {
+    // Only check email uniqueness if email is provided
+    if (studentData.email && students.some((student) => student.email?.toLowerCase() === studentData.email?.toLowerCase())) {
       throw new Error("A student with this email already exists.");
     }
     const id = Date.now();
