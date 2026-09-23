@@ -60,7 +60,7 @@ export function AddStudentModal({ isOpen, onClose }) {
         studentId: generatedId,
       });
     } catch (submitError) {
-      const errorMessage = submitError?.message || submitError?.data || submitError?.toString() || String(submitError) || "Unable to save this student.";
+      const errorMessage = typeof submitError === 'string' ? submitError : submitError?.message || submitError?.error || JSON.stringify(submitError);
       setError(errorMessage);
       return;
     }

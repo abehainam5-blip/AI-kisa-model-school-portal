@@ -19,15 +19,13 @@ $performance = (int) ($body['performance'] ?? 75);
 $socialMedia = trim((string) ($body['social_media'] ?? ''));
 $studentId = trim((string) ($body['student_id'] ?? ''));
 
-if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < PASSWORD_MIN_LENGTH) {
-    errorResponse('Name, valid email, and a password of at least ' . PASSWORD_MIN_LENGTH . ' characters are required.', 422);
+if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    errorResponse('Name and valid email are required.', 422);
 }
 if ($classNumber < 1 || $classNumber > 10 || $attendance < 0 || $attendance > 100 || $performance < 0 || $performance > 100) {
     errorResponse('Class, attendance, and performance values are invalid.', 422);
 }
-if ($socialMedia === '') {
-    errorResponse('A Social Media Link / Profile URL is required.', 422);
-}
+// Social media is now optional - no validation required
 
 try {
     $pdo = getDBConnection();
@@ -44,14 +42,13 @@ try {
     }
 
     $insert = $pdo->prepare(
-        'INSERT INTO students (name, email, password, class_number, gender, attendance, performance, social_media, student_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        'INSERT INTO students (name, email, class_number, gender, attendance, performance, social_media, student_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          RETURNING id, name, email, class_number, gender, attendance, performance, social_media, student_id, created_at'
     );
     $insert->execute([
         $name,
         $email,
-        password_hash($password, PASSWORD_DEFAULT),
         $classNumber,
         $gender ?: 'Not Specified',
         $attendance,
