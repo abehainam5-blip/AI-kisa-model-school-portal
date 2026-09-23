@@ -175,8 +175,8 @@ export function DataProvider({ children }) {
     const generatedStudentId = studentData.studentId || generateStudentId(Number(studentData.class), students.length);
     const localStudent = {
       id, studentId: generatedStudentId, name: studentData.name, class: Number(studentData.class),
-      attendance: Number(studentData.attendance) || 85,
-      performance: Number(studentData.performance) || 75, tasksCompleted: 0,
+      attendance: 85,
+      performance: 75, tasksCompleted: 0,
       strengths: studentData.strengths && studentData.strengths.length ? studentData.strengths : STRENGTH_POOL[0],
       weakPoints: studentData.weakPoints && studentData.weakPoints.length ? studentData.weakPoints : WEAK_POOL[0],
       avatarHue: (id * 47) % 360, present: true,
@@ -192,11 +192,9 @@ export function DataProvider({ children }) {
       body: JSON.stringify({
         name: studentData.name,
         email: studentData.email,
-        password: studentData.password,
         class: studentData.class,
         gender: studentData.gender,
-        attendance: studentData.attendance,
-        performance: studentData.performance
+        socialMedia: studentData.socialMedia
       })
     });
     const payload = await response.json().catch(() => ({}));

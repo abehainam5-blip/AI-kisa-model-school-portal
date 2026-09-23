@@ -23,10 +23,7 @@ export function AddStudentModal({ isOpen, onClose }) {
   const [name, setName] = useState("");
   const [cls, setCls] = useState("8");
   const [gender, setGender] = useState("Male");
-  const [attendance, setAttendance] = useState("85");
-  const [performance, setPerformance] = useState("75");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [socialMedia, setSocialMedia] = useState("");
   const [studentId, setStudentId] = useState("");
   const [error, setError] = useState("");
@@ -47,12 +44,8 @@ export function AddStudentModal({ isOpen, onClose }) {
       setError("Please enter a valid unique email address.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (!isValidSocialMediaUrl(socialMedia)) {
-      setError("A valid Social Media Link / Profile URL (LinkedIn, Instagram, or Facebook) is required.");
+    if (socialMedia && !isValidSocialMediaUrl(socialMedia)) {
+      setError("A valid Social Media Link / Profile URL (LinkedIn, Instagram, or Facebook) is required if provided.");
       return;
     }
     try {
@@ -62,10 +55,7 @@ export function AddStudentModal({ isOpen, onClose }) {
         name: name.trim(),
         class: cls,
         gender,
-        attendance,
-        performance,
         email: email.trim(),
-        password,
         socialMedia: socialMedia.trim(),
         studentId: generatedId,
       });
@@ -77,10 +67,7 @@ export function AddStudentModal({ isOpen, onClose }) {
     setName("");
     setCls("8");
     setGender("Male");
-    setAttendance("85");
-    setPerformance("75");
     setEmail("");
-    setPassword("");
     setSocialMedia("");
     setStudentId("");
     setError("");
@@ -127,13 +114,6 @@ export function AddStudentModal({ isOpen, onClose }) {
             <input type="email" className="field-input" placeholder="student@aikisa.edu.pk" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
           </div>
           <div>
-            <label className="field-label">Initial Password *</label>
-            <input type="password" className="field-input" placeholder="At least 8 characters" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} autoComplete="new-password" />
-          </div>
-        </div>
-
-        <div className="grid grid-2" style={{ marginBottom: 15 }}>
-          <div>
             <label className="field-label">Class</label>
             <select className="field-input" value={cls} onChange={(e) => setCls(e.target.value)}>
               {CLASS_NUMS.map((c) => (
@@ -141,6 +121,9 @@ export function AddStudentModal({ isOpen, onClose }) {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="grid grid-2" style={{ marginBottom: 15 }}>
           <div>
             <label className="field-label">Gender</label>
             <select className="field-input" value={gender} onChange={(e) => setGender(e.target.value)}>
@@ -151,33 +134,8 @@ export function AddStudentModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        <div className="grid grid-2" style={{ marginBottom: 15 }}>
-          <div>
-            <label className="field-label">Initial Attendance (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              className="field-input"
-              value={attendance}
-              onChange={(e) => setAttendance(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="field-label">Initial Performance (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              className="field-input"
-              value={performance}
-              onChange={(e) => setPerformance(e.target.value)}
-            />
-          </div>
-        </div>
-
         <div className="field-group" style={{ marginBottom: 15 }}>
-          <label className="field-label">Social Media Link / Profile URL *</label>
+          <label className="field-label">Social Media Link / Profile URL (Optional)</label>
           <input
             className="field-input"
             placeholder="e.g. linkedin.com/in/username or instagram.com/username"
@@ -185,7 +143,7 @@ export function AddStudentModal({ isOpen, onClose }) {
             onChange={(e) => { setSocialMedia(e.target.value); setError(""); }}
           />
           <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 4 }}>
-            Required: LinkedIn, Instagram, or Facebook profile link.
+            Optional: LinkedIn, Instagram, or Facebook profile link.
           </div>
         </div>
 
